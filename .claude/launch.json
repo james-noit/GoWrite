@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gowrite-dev",
+      "runtimeExecutable": "/home/james/.local/node-24/bin/node",
+      "runtimeArgs": ["/home/james/Proyectos/GoWrite/node_modules/vite/bin/vite.js"],
+      "port": 5173
+    }
+  ]
+}

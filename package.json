@@ -1,0 +1,37 @@
+{
+  "name": "gowrite",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "notices": "node scripts/generate-third-party-notices.mjs"
+  },
+  "dependencies": {
+    "@tiptap/core": "3.27.3",
+    "@tiptap/extension-placeholder": "3.27.3",
+    "@tiptap/pm": "3.27.3",
+    "@tiptap/react": "3.27.3",
+    "@tiptap/starter-kit": "3.27.3",
+    "docx": "9.7.1",
+    "jszip": "3.10.1",
+    "mammoth": "1.12.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tiptap-markdown": "0.9.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.7.0",
+    "fake-indexeddb": "6.2.5",
+    "jsdom": "29.1.1",
+    "typescript": "5.6.3",
+    "vite": "6.4.3",
+    "vitest": "4.1.10"
+  }
+}
