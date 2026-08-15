@@ -65,13 +65,16 @@ export default function App() {
         onExport={handleExport}
         theme={theme}
         onToggleTheme={toggleTheme}
-        ai={ai}
-        aiPanelOpen={aiPanelOpen}
-        onToggleAiPanel={() => setAiPanelOpen((v) => !v)}
         docs={docs}
       />
 
-      <Toolbar editor={editor} />
+      <Toolbar
+        editor={editor}
+        ai={ai}
+        autocompleteEnabled={tools.config.autocomplete.enabled}
+        aiPanelOpen={aiPanelOpen}
+        onToggleAiPanel={() => setAiPanelOpen((v) => !v)}
+      />
 
       <AiPanel
         open={aiPanelOpen}

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import type { UseAiConnection } from '../../hooks/useAiConnection'
 import type { UseDocuments } from '../../hooks/useDocuments'
 import { useI18n } from '../../hooks/useI18n'
 import type { FormatId, Theme } from '../../types'
@@ -12,9 +11,6 @@ interface HeaderProps {
   onExport: (formatId: FormatId) => void
   theme: Theme
   onToggleTheme: () => void
-  ai: UseAiConnection
-  aiPanelOpen: boolean
-  onToggleAiPanel: () => void
   docs: UseDocuments
 }
 
@@ -25,9 +21,6 @@ export function Header({
   onExport,
   theme,
   onToggleTheme,
-  ai,
-  aiPanelOpen,
-  onToggleAiPanel,
   docs,
 }: HeaderProps) {
   const { t } = useI18n()
@@ -75,14 +68,6 @@ export function Header({
 
       <div className="app-header-right">
         <FileMenu onImport={onImport} onExport={onExport} theme={theme} onToggleTheme={onToggleTheme} docs={docs} />
-        <button
-          type="button"
-          className={`header-btn ai-btn${ai.isConnected ? ' is-connected' : ''}`}
-          onClick={onToggleAiPanel}
-          aria-expanded={aiPanelOpen}
-        >
-          {t('ai.buttonLabel')}
-        </button>
       </div>
     </header>
   )

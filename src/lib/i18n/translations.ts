@@ -7,6 +7,7 @@ export const translations = {
     'app.renameTitle': 'Haz clic para renombrar el documento',
     'app.importErrorDismiss': 'Cerrar',
 
+    'file.menuLabel': '📁 Archivo',
     'file.import': '📂 Importar…',
     'file.exportAs': '💾 Exportar como…',
     'file.newDocument': '📄 Nuevo documento',
@@ -61,7 +62,7 @@ export const translations = {
     'editor.char': 'carácter',
     'editor.undoAi': '↩ Deshacer última generación de IA',
 
-    'ai.buttonLabel': '✨ IA',
+    'ai.buttonLabel': 'Herramientas IA',
     'ai.title': 'Asistente de IA',
     'ai.configureProvider': 'Configurar proveedor',
     'ai.status.idle': 'sin conectar',
@@ -116,6 +117,7 @@ export const translations = {
     'app.renameTitle': 'Click to rename the document',
     'app.importErrorDismiss': 'Close',
 
+    'file.menuLabel': '📁 File',
     'file.import': '📂 Import…',
     'file.exportAs': '💾 Export as…',
     'file.newDocument': '📄 New document',
@@ -170,7 +172,7 @@ export const translations = {
     'editor.char': 'character',
     'editor.undoAi': '↩ Undo last AI generation',
 
-    'ai.buttonLabel': '✨ AI',
+    'ai.buttonLabel': 'AI Tools',
     'ai.title': 'AI Assistant',
     'ai.configureProvider': 'Configure provider',
     'ai.status.idle': 'not connected',

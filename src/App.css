@@ -117,11 +117,6 @@
   transform: scale(0.96);
 }
 
-.ai-btn.is-connected {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-  color: var(--accent);
-}
-
 /* Header action buttons stay inline at every size; the collapsible menu lives in the toolbar. */
 
 /* ---------- File menu / dropdown ---------- */
@@ -484,6 +479,82 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 4px;
+}
+
+/* AI status card: a self-contained toggle that opens the AI panel, showing connection state at a glance. */
+
+.toolbar-ai-card {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 0 14px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--bg-1)), color-mix(in srgb, var(--accent-2) 10%, var(--bg-1)));
+  color: var(--text-1);
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.toolbar-ai-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+  color: var(--text-0);
+}
+
+.toolbar-ai-card:active {
+  transform: scale(0.97);
+}
+
+.toolbar-ai-card.is-open {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 24%, var(--bg-1)), color-mix(in srgb, var(--accent-2) 24%, var(--bg-1)));
+  color: var(--text-0);
+}
+
+.toolbar-ai-label {
+  white-space: nowrap;
+}
+
+.toolbar-ai-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--text-2);
+  transition: background-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.toolbar-ai-card--connecting .toolbar-ai-dot {
+  background: #f5a524;
+  animation: toolbar-ai-pulse 1s ease-in-out infinite;
+}
+
+.toolbar-ai-card--connected .toolbar-ai-dot {
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent);
+}
+
+.toolbar-ai-card--error .toolbar-ai-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+@keyframes toolbar-ai-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.toolbar-ai-auto {
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--accent-2);
 }
 
 .toolbar-pin {

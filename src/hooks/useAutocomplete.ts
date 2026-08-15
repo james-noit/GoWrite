@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import { useEffect, useRef } from 'react'
 import { getGhost, hideGhost, showGhost } from '../components/Editor/ghostSuggestion'
-import { autocompleteMessages, generate, textBeforeCursor } from '../lib/ai/actions'
+import { autocompleteCodeMessages, autocompleteMessages, generate, textBeforeCursor } from '../lib/ai/actions'
 import type { AutocompleteConfig } from '../types'
 import type { UseAiConnection } from './useAiConnection'
 
@@ -60,21 +60,26 @@ export function useAutocomplete(
       const before = textBeforeCursor(editor)
       if (!before.trim()) return
 
+      const inCodeBlock = editor.isActive('codeBlock')
+
       controller = new AbortController()
       const { signal } = controller
       try {
         const raw = await generate({
-          messages: autocompleteMessages(before, cfg.minWords, cfg.maxWords),
+          messages: inCodeBlock
+            ? autocompleteCodeMessages(before, cfg.minWords, cfg.maxWords)
+            : autocompleteMessages(before, cfg.minWords, cfg.maxWords),
           config: aiNow.config,
           signal,
           maxTokens: Math.min(512, Math.max(64, cfg.maxWords * 4)),
         })
         if (signal.aborted || muted) return
-        const suggestion = raw.trim().replace(/\s+/g, ' ')
+        // Code needs its newlines/indentation preserved; prose collapses stray whitespace.
+        const suggestion = inCodeBlock ? raw.replace(/^\n+|\s+$/g, '') : raw.trim().replace(/\s+/g, ' ')
         if (!suggestion) return
         const head = editor.state.selection.head
         const prevChar = editor.state.doc.textBetween(Math.max(0, head - 1), head)
-        const needsSpace = !!prevChar && !/\s/.test(prevChar) && !/^[.,;:!?)]/.test(suggestion)
+        const needsSpace = !inCodeBlock && !!prevChar && !/\s/.test(prevChar) && !/^[.,;:!?)]/.test(suggestion)
         showGhost(editor, needsSpace ? ` ${suggestion}` : suggestion)
       } catch {
         // best-effort: a failed suggestion should never interrupt writing

@@ -47,7 +47,7 @@ export function FileMenu({ onImport, onExport, theme, onToggleTheme, docs }: Fil
   return (
     <div className="menu-root" ref={rootRef}>
       <button type="button" className="header-btn" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        File
+        {t('file.menuLabel')}
       </button>
 
       {open && (

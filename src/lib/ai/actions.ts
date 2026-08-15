@@ -72,6 +72,20 @@ Devuelve únicamente el texto nuevo.`,
   )
 }
 
+export function autocompleteCodeMessages(text: string, minWords: number, maxWords: number): ChatMessage[] {
+  const { min, max } = clampRange(minWords, maxWords)
+  return messagesFor(
+    `El contenido de <texto> es código fuente que el usuario lleva escrito dentro de un bloque de código, y puede terminar a mitad de línea o de expresión. Escribe su continuación inmediata. Instrucciones:
+- Continúa exactamente desde donde termina el código, sin repetir lo ya escrito.
+- Usa el mismo lenguaje de programación, estilo de indentación y convenciones de nombres que el resto del código.
+- Conserva los saltos de línea y la indentación tal cual deban aparecer en el código; no los conviertas en espacios.
+- No incluyas explicaciones, comentarios que no pidan el contexto, ni delimitadores de bloque de código (\`\`\`).
+- Escribe aproximadamente entre ${min} y ${max} palabras de código.
+Devuelve únicamente el código de continuación, en texto plano.`,
+    text,
+  )
+}
+
 export function autocompleteMessages(text: string, minWords: number, maxWords: number): ChatMessage[] {
   const { min, max } = clampRange(minWords, maxWords)
   return messagesFor(
