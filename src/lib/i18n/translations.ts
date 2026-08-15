@@ -7,6 +7,8 @@ export const translations = {
     'app.renameTitle': 'Haz clic para renombrar el documento',
     'app.importErrorDismiss': 'Cerrar',
 
+    'header.supportLabel': '¿Te gusta?',
+
     'file.menuLabel': '📁 Archivo',
     'file.import': '📂 Importar…',
     'file.exportAs': '💾 Exportar como…',
@@ -117,6 +119,8 @@ export const translations = {
 
     'app.renameTitle': 'Click to rename the document',
     'app.importErrorDismiss': 'Close',
+
+    'header.supportLabel': 'Enjoying it?',
 
     'file.menuLabel': '📁 File',
     'file.import': '📂 Import…',

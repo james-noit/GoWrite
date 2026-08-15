@@ -28,14 +28,19 @@
 
 /* ---------- Header ---------- */
 
+/* Mobile: a simple two-row flex layout — filename/File stay on row 1, the support block gets its
+   own centered row 2 (flex-basis:100% forces the wrap). Desktop switches to a true 3-column grid
+   below, so the support block sits precisely centered on the same row as everything else. */
+
 .app-header {
   position: sticky;
   top: 0;
   z-index: 30;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 6px 12px;
   padding: 10px 14px;
   border-left: none;
   border-right: none;
@@ -48,6 +53,33 @@
   align-items: baseline;
   gap: 10px;
   min-width: 0;
+  order: 1;
+}
+
+.app-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-basis: 100%;
+  order: 3;
+}
+
+.app-header-right {
+  order: 2;
+}
+
+.bmc-support-label {
+  font-family: "Segoe Script", "Bradley Hand", "Comic Sans MS", cursive;
+  font-size: 1.05rem;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
 }
 
 .app-brand {
@@ -96,6 +128,34 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.bmc-button {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  transition: transform var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+
+.bmc-button:hover {
+  transform: scale(1.03);
+}
+
+.bmc-button:active {
+  transform: scale(0.97);
+}
+
+.bmc-button img {
+  display: block;
+  height: 36px;
+  width: auto;
+}
+
+@media (max-width: 480px) {
+  .bmc-button img {
+    height: 32px;
+  }
 }
 
 .header-btn {
@@ -1433,7 +1493,24 @@
 
 @media (min-width: 768px) {
   .app-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     padding: 12px 22px;
+  }
+
+  .app-header-left {
+    order: initial;
+    justify-self: start;
+  }
+
+  .app-header-center {
+    order: initial;
+    flex-basis: auto;
+  }
+
+  .app-header-right {
+    order: initial;
+    justify-self: end;
   }
 
   .app-main {

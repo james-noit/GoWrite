@@ -66,6 +66,21 @@ export function Header({
         )}
       </div>
 
+      <div className="app-header-center">
+        <span className="bmc-support-label">{t('header.supportLabel')}</span>
+        <a
+          href="https://www.buymeacoffee.com/jamesnoitt"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bmc-button"
+        >
+          <img
+            src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=jamesnoitt&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff"
+            alt="Buy me a coffee"
+          />
+        </a>
+      </div>
+
       <div className="app-header-right">
         <FileMenu onImport={onImport} onExport={onExport} theme={theme} onToggleTheme={onToggleTheme} docs={docs} />
       </div>
