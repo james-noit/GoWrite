@@ -13,12 +13,17 @@
   transition: background-color var(--dur-med) var(--ease), border-color var(--dur-med) var(--ease);
 }
 
-.dropdown,
 .ai-panel,
 .summary-modal {
   background: var(--surface-menu);
   backdrop-filter: blur(var(--blur-menu)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--blur-menu)) saturate(180%);
+}
+
+.dropdown {
+  background: var(--bg-1);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* ---------- Header ---------- */
@@ -175,6 +180,14 @@
 
 .dropdown-item--static:hover {
   background: transparent;
+}
+
+.dropdown-item--danger {
+  color: var(--danger);
+}
+
+.dropdown-item--danger:hover {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
 .dropdown-submenu {
@@ -430,7 +443,7 @@
 }
 
 .toolbar-accordion.is-open {
-  max-height: 260px;
+  max-height: 360px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -438,12 +451,39 @@
   position: relative;
 }
 
-.toolbar-buttons {
+.toolbar-groups {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 8px 38px;
+}
+
+.toolbar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg-1) 60%, transparent);
+}
+
+.toolbar-group-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.toolbar-group-buttons {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 4px;
-  padding: 10px 4px 38px;
 }
 
 .toolbar-pin {
@@ -485,12 +525,23 @@
     display: none;
   }
 
-  .toolbar-buttons {
+  .toolbar-groups {
     flex-wrap: nowrap;
     justify-content: center;
     overflow-x: auto;
     padding: 0;
     width: 100%;
+  }
+
+  .toolbar-group {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    padding: 4px 6px;
+  }
+
+  .toolbar-group + .toolbar-group {
+    border-left: 1px solid var(--border);
   }
 }
 

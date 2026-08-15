@@ -114,6 +114,17 @@ export function useDocuments(editor: Editor | null) {
     [editor],
   )
 
+  /** Wipes the current document's saved content back to blank, keeping its id/filename in place. */
+  const clearCurrentStorage = useCallback(() => {
+    const current = currentRef.current
+    if (!editor || !current) return
+    const now = Date.now()
+    const cleared: StoredDocument = { ...current, content: EMPTY_DOC_CONTENT, updatedAt: now }
+    void putDocument(cleared)
+    setDocuments((prev) => sortByRecent(prev.map((d) => (d.id === cleared.id ? cleared : d))))
+    editor.commands.setContent(EMPTY_DOC_CONTENT)
+  }, [editor])
+
   const removeDocument = useCallback(
     (id: string) => {
       void deleteDocument(id)
@@ -140,7 +151,18 @@ export function useDocuments(editor: Editor | null) {
 
   const currentFilename = documents.find((d) => d.id === currentId)?.filename ?? DEFAULT_FILENAME
 
-  return { documents, currentId, currentFilename, ready, rename, createNew, openDocument, importAsCurrent, removeDocument }
+  return {
+    documents,
+    currentId,
+    currentFilename,
+    ready,
+    rename,
+    createNew,
+    openDocument,
+    importAsCurrent,
+    removeDocument,
+    clearCurrentStorage,
+  }
 }
 
 export type UseDocuments = ReturnType<typeof useDocuments>

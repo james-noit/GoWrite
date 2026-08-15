@@ -185,6 +185,22 @@ export function FileMenu({ onImport, onExport, theme, onToggleTheme, docs }: Fil
               ))}
             </div>
           </div>
+
+          <div className="dropdown-divider" />
+
+          <button
+            type="button"
+            className="dropdown-item dropdown-item--danger"
+            onClick={() => {
+              const filename = docs.documents.find((d) => d.id === docs.currentId)?.filename ?? ''
+              if (window.confirm(`${t('file.clearStorageConfirmPrefix')}${filename}${t('file.clearStorageConfirmSuffix')}`)) {
+                docs.clearCurrentStorage()
+              }
+              setOpen(false)
+            }}
+          >
+            {t('file.clearStorage')}
+          </button>
         </div>
       )}
     </div>

@@ -18,6 +18,18 @@ const HEADING_MAP = {
   3: HeadingLevel.HEADING_3,
 } as const
 
+const ALIGN_MAP: Record<string, (typeof AlignmentType)[keyof typeof AlignmentType]> = {
+  left: AlignmentType.LEFT,
+  center: AlignmentType.CENTER,
+  right: AlignmentType.RIGHT,
+  justify: AlignmentType.JUSTIFIED,
+}
+
+function alignmentOf(node: JSONContent) {
+  const align = node.attrs?.textAlign as string | undefined
+  return align ? ALIGN_MAP[align] : undefined
+}
+
 const ORDERED_LIST_REF = 'gowrite-ordered-list'
 const INDENT_STEP = 480
 
@@ -72,13 +84,14 @@ function blockToParagraphs(node: JSONContent, indent = 0): Paragraph[] {
   const indentOpt = indent > 0 ? { left: indent * INDENT_STEP } : undefined
   switch (node.type) {
     case 'paragraph':
-      return [new Paragraph({ children: inlineToRuns(node.content), indent: indentOpt })]
+      return [new Paragraph({ children: inlineToRuns(node.content), indent: indentOpt, alignment: alignmentOf(node) })]
     case 'heading': {
       const level = (node.attrs?.level ?? 1) as 1 | 2 | 3
       return [
         new Paragraph({
           heading: HEADING_MAP[level] ?? HeadingLevel.HEADING_1,
           children: inlineToRuns(node.content),
+          alignment: alignmentOf(node),
         }),
       ]
     }

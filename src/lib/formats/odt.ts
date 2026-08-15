@@ -49,6 +49,30 @@ function collectCharStyles(xmlDoc: Document): Map<string, CharStyleFlags> {
   return map
 }
 
+const CSS_ALIGN: Record<string, string> = {
+  start: 'left',
+  left: 'left',
+  end: 'right',
+  right: 'right',
+  center: 'center',
+  justify: 'justify',
+}
+
+function collectParaAlign(xmlDoc: Document): Map<string, string> {
+  const map = new Map<string, string>()
+  const styles = xmlDoc.getElementsByTagNameNS(NS.style, 'style')
+  for (let i = 0; i < styles.length; i++) {
+    const styleEl = styles[i]
+    if (styleEl.getAttributeNS(NS.style, 'family') !== 'paragraph') continue
+    const name = styleEl.getAttributeNS(NS.style, 'name')
+    if (!name) continue
+    const props = styleEl.getElementsByTagNameNS(NS.style, 'paragraph-properties')[0]
+    const align = props?.getAttributeNS(NS.fo, 'text-align')
+    if (align && CSS_ALIGN[align]) map.set(name, CSS_ALIGN[align])
+  }
+  return map
+}
+
 function collectListKinds(xmlDoc: Document): Map<string, 'bullet' | 'number'> {
   const map = new Map<string, 'bullet' | 'number'>()
   const listStyles = xmlDoc.getElementsByTagNameNS(NS.text, 'list-style')
@@ -103,19 +127,25 @@ function blockNodeToHtml(
   node: Element,
   charStyles: Map<string, CharStyleFlags>,
   listKinds: Map<string, 'bullet' | 'number'>,
+  paraAlign: Map<string, string>,
 ): string {
   const local = node.localName
   const inline = () =>
     Array.from(node.childNodes)
       .map((child) => inlineNodeToHtml(child, charStyles))
       .join('')
+  const alignAttr = () => {
+    const styleName = node.getAttributeNS(NS.text, 'style-name') ?? ''
+    const align = paraAlign.get(styleName)
+    return align ? ` style="text-align: ${align}"` : ''
+  }
 
   if (local === 'h') {
     const level = Math.min(3, Math.max(1, Number(node.getAttributeNS(NS.text, 'outline-level') ?? '1')))
-    return `<h${level}>${inline() || '<br>'}</h${level}>`
+    return `<h${level}${alignAttr()}>${inline() || '<br>'}</h${level}>`
   }
   if (local === 'p') {
-    return `<p>${inline() || '<br>'}</p>`
+    return `<p${alignAttr()}>${inline() || '<br>'}</p>`
   }
   if (local === 'list') {
     const styleName = node.getAttributeNS(NS.text, 'style-name') ?? ''
@@ -125,7 +155,7 @@ function blockNodeToHtml(
       .filter((child) => child.localName === 'list-item')
       .map((item) => {
         const inner = Array.from(item.children)
-          .map((child) => blockNodeToHtml(child, charStyles, listKinds))
+          .map((child) => blockNodeToHtml(child, charStyles, listKinds, paraAlign))
           .join('')
         return `<li>${inner}</li>`
       })
@@ -134,7 +164,7 @@ function blockNodeToHtml(
   }
   // unknown container: recurse into element children
   return Array.from(node.children)
-    .map((child) => blockNodeToHtml(child, charStyles, listKinds))
+    .map((child) => blockNodeToHtml(child, charStyles, listKinds, paraAlign))
     .join('')
 }
 
@@ -146,12 +176,13 @@ async function odtToHtml(file: File): Promise<string> {
   const xmlDoc = new DOMParser().parseFromString(contentXml, 'application/xml')
   const charStyles = collectCharStyles(xmlDoc)
   const listKinds = collectListKinds(xmlDoc)
+  const paraAlign = collectParaAlign(xmlDoc)
 
   const bodyText = xmlDoc.getElementsByTagNameNS(NS.office, 'text')[0]
   if (!bodyText) return '<p></p>'
 
   return Array.from(bodyText.children)
-    .map((child) => blockNodeToHtml(child, charStyles, listKinds))
+    .map((child) => blockNodeToHtml(child, charStyles, listKinds, paraAlign))
     .join('')
 }
 
@@ -188,9 +219,31 @@ const MANIFEST_XML = `<?xml version="1.0" encoding="UTF-8"?>
   <manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>
 </manifest:manifest>`
 
+const ODT_ALIGN: Record<string, string> = {
+  left: 'start',
+  center: 'center',
+  right: 'end',
+  justify: 'justify',
+}
+
 function buildContentXml(json: JSONContent): string {
   const charStyleMap = new Map<string, string>()
   const charStyleDefs: string[] = []
+  const paraStyleMap = new Map<string, string>()
+  const paraStyleDefs: string[] = []
+
+  function styleForAlign(baseStyle: string, textAlign: string | undefined): string {
+    if (!textAlign || !ODT_ALIGN[textAlign]) return baseStyle
+    const key = `${baseStyle}:${textAlign}`
+    const existing = paraStyleMap.get(key)
+    if (existing) return existing
+    const name = `${baseStyle}_A${paraStyleMap.size}`
+    paraStyleMap.set(key, name)
+    paraStyleDefs.push(
+      `<style:style style:name="${name}" style:family="paragraph" style:parent-style-name="${baseStyle}"><style:paragraph-properties fo:text-align="${ODT_ALIGN[textAlign]}"/></style:style>`,
+    )
+    return name
+  }
 
   function getOrCreateCharStyle(marks: { type: string }[]): string {
     const key = marks
@@ -260,11 +313,14 @@ function buildContentXml(json: JSONContent): string {
 
   function blockToOdt(node: JSONContent, paragraphStyle: string): string {
     switch (node.type) {
-      case 'paragraph':
-        return `<text:p text:style-name="${paragraphStyle}">${inlineToOdt(node.content) || ''}</text:p>`
+      case 'paragraph': {
+        const styleName = styleForAlign(paragraphStyle, node.attrs?.textAlign as string | undefined)
+        return `<text:p text:style-name="${styleName}">${inlineToOdt(node.content) || ''}</text:p>`
+      }
       case 'heading': {
         const level = Math.min(3, Math.max(1, Number(node.attrs?.level ?? 1)))
-        return `<text:h text:style-name="Heading_${level}" text:outline-level="${level}">${inlineToOdt(node.content)}</text:h>`
+        const styleName = styleForAlign(`Heading_${level}`, node.attrs?.textAlign as string | undefined)
+        return `<text:h text:style-name="${styleName}" text:outline-level="${level}">${inlineToOdt(node.content)}</text:h>`
       }
       case 'blockquote':
         return (node.content ?? []).map((child) => blockToOdt(child, 'Quotations')).join('')
@@ -292,6 +348,7 @@ function buildContentXml(json: JSONContent): string {
 <office:document-content xmlns:office="${NS.office}" xmlns:style="${NS.style}" xmlns:text="${NS.text}" xmlns:fo="${NS.fo}" xmlns:xlink="${NS.xlink}" office:version="1.2">
   <office:automatic-styles>
     ${charStyleDefs.join('\n    ')}
+    ${paraStyleDefs.join('\n    ')}
     ${LIST_STYLE_XML}
   </office:automatic-styles>
   <office:body>

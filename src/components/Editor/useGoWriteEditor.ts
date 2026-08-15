@@ -1,4 +1,5 @@
 import Placeholder from '@tiptap/extension-placeholder'
+import TextAlign from '@tiptap/extension-text-align'
 import { useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Markdown } from 'tiptap-markdown'
@@ -12,6 +13,7 @@ export function useGoWriteEditor(onUpdate: () => void, placeholder: string) {
         link: { openOnClick: false, autolink: true },
       }),
       Placeholder.configure({ placeholder }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Markdown.configure({ html: true, transformPastedText: false }),
       GhostSuggestion,
     ],
