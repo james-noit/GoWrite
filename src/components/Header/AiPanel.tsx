@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import type { UseAiConnection } from '../../hooks/useAiConnection'
 import type { UseAiTools } from '../../hooks/useAiTools'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
@@ -9,6 +9,7 @@ import { providerList } from '../../lib/ai/providers'
 import { textToHtml } from '../../lib/text'
 import type { ConnectionStatus } from '../../types'
 import { FunnyLoader } from '../FunnyLoader'
+import { AutocompleteIcon, AutoGenerateIcon, SummarizeIcon } from '../icons'
 
 interface AiPanelProps {
   open: boolean
@@ -18,13 +19,19 @@ interface AiPanelProps {
   tools: UseAiTools
   onOpenSummary: () => void
   onAiInsertion: (from: number, to: number) => void
+  anchorRef: RefObject<HTMLButtonElement>
 }
 
 type GenPhase = 'idle' | 'generating' | 'review' | 'editing'
+type ToolKey = 'summarize' | 'autocomplete' | 'continueTool'
 
-export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiInsertion }: AiPanelProps) {
+const POPOVER_WIDTH = 380
+const POPOVER_MARGIN = 10
+
+export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiInsertion, anchorRef }: AiPanelProps) {
   const { t } = useI18n()
   const [configOpen, setConfigOpen] = useState(!ai.isConnected)
+  const [expandedTool, setExpandedTool] = useState<ToolKey | null>(null)
   const [autoFlash, setAutoFlash] = useState<'on' | 'off' | null>(null)
   const [genPhase, setGenPhase] = useState<GenPhase>('idle')
   const [draft, setDraft] = useState('')
@@ -33,6 +40,8 @@ export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiI
   const [showEditPrompt, setShowEditPrompt] = useState(false)
   const [editInstruction, setEditInstruction] = useState('')
   const [genError, setGenError] = useState<string | null>(null)
+  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({})
+  const [caretStyle, setCaretStyle] = useState<CSSProperties | null>(null)
   const controllerRef = useRef<AbortController | null>(null)
   const flashTimer = useRef<number | undefined>(undefined)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -54,6 +63,33 @@ export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiI
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [open, onClose])
+
+  // On desktop, anchor the panel as a popover under the trigger button instead of a
+  // page-edge sheet, so it visually opens "from" the button that was clicked.
+  useEffect(() => {
+    if (!open) return
+    const updatePosition = () => {
+      const anchor = anchorRef.current
+      const isDesktop = window.matchMedia('(min-width: 768px)').matches
+      if (!isDesktop || !anchor) {
+        setPopoverStyle({})
+        setCaretStyle(null)
+        return
+      }
+      const rect = anchor.getBoundingClientRect()
+      const left = Math.max(
+        POPOVER_MARGIN,
+        Math.min(rect.right - POPOVER_WIDTH, window.innerWidth - POPOVER_WIDTH - POPOVER_MARGIN),
+      )
+      const top = Math.min(rect.bottom + POPOVER_MARGIN, window.innerHeight - 160)
+      setPopoverStyle({ position: 'fixed', top, left, maxHeight: window.innerHeight - top - POPOVER_MARGIN })
+      const caretLeft = Math.max(left + 16, Math.min(rect.left + rect.width / 2, left + POPOVER_WIDTH - 16))
+      setCaretStyle({ position: 'fixed', top: top - 7, left: caretLeft })
+    }
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    return () => window.removeEventListener('resize', updatePosition)
+  }, [open, anchorRef])
 
   // Auto-collapse provider config on successful connection; reopen it when it drops.
   const prevStatus = useRef(ai.status)
@@ -157,8 +193,10 @@ export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiI
 
   return (
     <div className="ai-panel-backdrop" onClick={onClose}>
+      {caretStyle && <span className="ai-panel-caret" style={caretStyle} aria-hidden="true" />}
       <div
         className="ai-panel glass-panel"
+        style={popoverStyle}
         onClick={(e) => e.stopPropagation()}
         ref={panelRef}
         role="dialog"
@@ -270,17 +308,21 @@ export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiI
           <h3 className="ai-panel-subtitle">{t('ai.tools')}</h3>
           {!ai.isConnected && <p className="field-hint">{t('ai.toolsDisconnectedHint')}</p>}
 
-          <div className="tool-card">
+          <ul className="tool-list">
+          <li className="tool-card">
             <button
               type="button"
-              className={`tool-toggle${toolsConfig.summarize.enabled ? ' is-on' : ''}`}
-              onClick={() => updateTool('summarize', { enabled: !toolsConfig.summarize.enabled })}
-              aria-expanded={toolsConfig.summarize.enabled}
+              className="tool-toggle"
+              onClick={() => setExpandedTool((v) => (v === 'summarize' ? null : 'summarize'))}
+              aria-expanded={expandedTool === 'summarize'}
             >
-              <span>{t('ai.summarize')}</span>
-              <span className="chevron" aria-hidden="true">{toolsConfig.summarize.enabled ? '▾' : '▸'}</span>
+              <span className="tool-toggle-label">
+                <SummarizeIcon />
+                {t('ai.summarize')}
+              </span>
+              <span className="chevron" aria-hidden="true">{expandedTool === 'summarize' ? '▾' : '▸'}</span>
             </button>
-            {toolsConfig.summarize.enabled && (
+            {expandedTool === 'summarize' && (
               <div className="tool-body">
                 <p className="field-hint">{t('ai.summarizeHint')}</p>
                 <button type="button" className="connect-btn" disabled={!ai.isConnected} onClick={onOpenSummary}>
@@ -288,27 +330,43 @@ export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiI
                 </button>
               </div>
             )}
-          </div>
+          </li>
 
-          <div className="tool-card">
+          <li className="tool-card">
             <button
               type="button"
               className={`tool-toggle${auto.enabled ? ' is-on' : ''}`}
-              onClick={toggleAutocomplete}
-              aria-pressed={auto.enabled}
+              onClick={() => setExpandedTool((v) => (v === 'autocomplete' ? null : 'autocomplete'))}
+              aria-expanded={expandedTool === 'autocomplete'}
             >
-              <span>{t('ai.autocomplete')}</span>
+              <span className="tool-toggle-label">
+                <AutocompleteIcon />
+                {t('ai.autocomplete')}
+              </span>
               <span className="tool-toggle-right">
+                <span className="tool-check" aria-hidden="true">{auto.enabled ? '✓' : ''}</span>
+                <span className="chevron" aria-hidden="true">{expandedTool === 'autocomplete' ? '▾' : '▸'}</span>
+              </span>
+            </button>
+            {expandedTool === 'autocomplete' && (
+              <div className="tool-body">
+                <div className="tool-enable-row">
+                  <span className="tool-enable-label">{t('ai.autocompleteEnable')}</span>
+                  <button
+                    type="button"
+                    className={`switch-track${auto.enabled ? ' is-on' : ''}`}
+                    role="switch"
+                    aria-checked={auto.enabled}
+                    onClick={toggleAutocomplete}
+                  >
+                    <span className="switch-thumb" />
+                  </button>
+                </div>
                 {autoFlash && (
                   <span className={`tool-flash tool-flash--${autoFlash}`}>
                     {autoFlash === 'on' ? t('ai.autocompleteOn') : t('ai.autocompleteOff')}
                   </span>
                 )}
-                <span className="tool-check" aria-hidden="true">{auto.enabled ? '✓' : ''}</span>
-              </span>
-            </button>
-            {auto.enabled && (
-              <div className="tool-body">
                 <label className="field-label" htmlFor="auto-wait">{t('ai.waitSeconds')}</label>
                 <input
                   id="auto-wait"
@@ -346,19 +404,22 @@ export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiI
                 <p className="field-hint">{t('ai.autocompleteHint')}</p>
               </div>
             )}
-          </div>
+          </li>
 
-          <div className="tool-card">
+          <li className="tool-card">
             <button
               type="button"
-              className={`tool-toggle${cont.enabled ? ' is-on' : ''}`}
-              onClick={() => updateTool('continueTool', { enabled: !cont.enabled })}
-              aria-expanded={cont.enabled}
+              className="tool-toggle"
+              onClick={() => setExpandedTool((v) => (v === 'continueTool' ? null : 'continueTool'))}
+              aria-expanded={expandedTool === 'continueTool'}
             >
-              <span>{t('ai.autoGenerate')}</span>
-              <span className="chevron" aria-hidden="true">{cont.enabled ? '▾' : '▸'}</span>
+              <span className="tool-toggle-label">
+                <AutoGenerateIcon />
+                {t('ai.autoGenerate')}
+              </span>
+              <span className="chevron" aria-hidden="true">{expandedTool === 'continueTool' ? '▾' : '▸'}</span>
             </button>
-            {cont.enabled && (
+            {expandedTool === 'continueTool' && (
               <div className="tool-body">
                 <div className="tool-grid">
                   <div>
@@ -477,7 +538,8 @@ export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiI
                 )}
               </div>
             )}
-          </div>
+          </li>
+          </ul>
         </section>
       </div>
     </div>

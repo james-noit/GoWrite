@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState, type RefObject } from "react";
 import type { UseAiConnection } from "../../hooks/useAiConnection";
 import { useI18n } from "../../hooks/useI18n";
 import type { TranslationKey } from "../../lib/i18n/translations";
@@ -154,6 +154,7 @@ interface AiStatusCardProps {
   autocompleteEnabled: boolean;
   open: boolean;
   onToggle: () => void;
+  buttonRef: RefObject<HTMLButtonElement>;
 }
 
 function AiStatusCard({
@@ -161,19 +162,39 @@ function AiStatusCard({
   autocompleteEnabled,
   open,
   onToggle,
+  buttonRef,
 }: AiStatusCardProps) {
   const { t } = useI18n();
+  const [showIntro, setShowIntro] = useState(false);
   const statusLabel = t(`ai.status.${ai.status}` as TranslationKey);
+  const metaText = ai.isConnected ? ai.config.model || ai.meta.defaultModel : statusLabel;
+
+  // One-shot welcome effect (spin the border, sweep a reflection, pop) once the page has
+  // fully finished loading — never replays afterwards, since this state only ever flips once.
+  useEffect(() => {
+    if (document.readyState === "complete") {
+      setShowIntro(true);
+      return;
+    }
+    const onLoad = () => setShowIntro(true);
+    window.addEventListener("load", onLoad, { once: true });
+    return () => window.removeEventListener("load", onLoad);
+  }, []);
+
   return (
     <button
+      ref={buttonRef}
       type="button"
-      className={`toolbar-ai-card toolbar-ai-card--${ai.status}${open ? " is-open" : ""}`}
+      className={`toolbar-ai-card toolbar-ai-card--${ai.status}${open ? " is-open" : ""}${showIntro ? " ai-intro" : ""}`}
       onClick={onToggle}
       aria-expanded={open}
       title={`${t("ai.buttonLabel")} — ${statusLabel}`}
     >
       <span className="toolbar-ai-dot" aria-hidden="true" />
-      <span className="toolbar-ai-label">{t("ai.buttonLabel")}</span>
+      <span className="toolbar-ai-text">
+        <span className="toolbar-ai-label">{t("ai.buttonLabel")}</span>
+        <span className="toolbar-ai-meta">{metaText}</span>
+      </span>
       {autocompleteEnabled && (
         <span
           className="toolbar-ai-auto"
@@ -187,19 +208,7 @@ function AiStatusCard({
   );
 }
 
-function ButtonRow({
-  editor,
-  ai,
-  autocompleteEnabled,
-  aiPanelOpen,
-  onToggleAiPanel,
-}: {
-  editor: Editor;
-  ai: UseAiConnection;
-  autocompleteEnabled: boolean;
-  aiPanelOpen: boolean;
-  onToggleAiPanel: () => void;
-}) {
+function FormatGroups({ editor }: { editor: Editor }) {
   const { t } = useI18n();
   return (
     <div className="toolbar-groups scroll-thin">
@@ -222,13 +231,6 @@ function ButtonRow({
           </div>
         </div>
       ))}
-
-      <AiStatusCard
-        ai={ai}
-        autocompleteEnabled={autocompleteEnabled}
-        open={aiPanelOpen}
-        onToggle={onToggleAiPanel}
-      />
     </div>
   );
 }
@@ -239,6 +241,7 @@ interface ToolbarProps {
   autocompleteEnabled: boolean;
   aiPanelOpen: boolean;
   onToggleAiPanel: () => void;
+  aiButtonRef: RefObject<HTMLButtonElement>;
 }
 
 export function Toolbar({
@@ -247,11 +250,25 @@ export function Toolbar({
   autocompleteEnabled,
   aiPanelOpen,
   onToggleAiPanel,
+  aiButtonRef,
 }: ToolbarProps) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const [, forceUpdate] = useReducer((c: number) => c + 1, 0);
+
+  // The active/inactive state of each format button depends on the cursor's current marks/node,
+  // which Tiptap tracks internally — React only re-renders when props change, so without this the
+  // toolbar would keep showing whatever was active the last time the cursor moved into the editor.
+  useEffect(() => {
+    if (!editor) return;
+    const onTransaction = () => forceUpdate();
+    editor.on("transaction", onTransaction);
+    return () => {
+      editor.off("transaction", onTransaction);
+    };
+  }, [editor]);
 
   // On mobile, the accordion collapses when focus/clicks leave the toolbar — unless pinned.
   useEffect(() => {
@@ -273,35 +290,33 @@ export function Toolbar({
 
   return (
     <div className="format-bar glass-panel" ref={rootRef}>
-      <div className="format-bar-inline">
-        <ButtonRow
-          editor={editor}
+      <div className="format-bar-top">
+        <div className="format-bar-inline">
+          <FormatGroups editor={editor} />
+        </div>
+
+        <button
+          type="button"
+          className="format-tab"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-expanded={menuOpen}
+          aria-label={t("toolbar.showFormatBar")}
+        >
+          {t("toolbar.format")} {menuOpen ? "▴" : "▾"}
+        </button>
+
+        <AiStatusCard
           ai={ai}
           autocompleteEnabled={autocompleteEnabled}
-          aiPanelOpen={aiPanelOpen}
-          onToggleAiPanel={onToggleAiPanel}
+          open={aiPanelOpen}
+          onToggle={onToggleAiPanel}
+          buttonRef={aiButtonRef}
         />
       </div>
 
-      <button
-        type="button"
-        className="format-tab"
-        onClick={() => setMenuOpen((v) => !v)}
-        aria-expanded={menuOpen}
-        aria-label={t("toolbar.showFormatBar")}
-      >
-        {t("toolbar.format")} {menuOpen ? "▴" : "▾"}
-      </button>
-
       <div className={`toolbar-accordion${menuOpen ? " is-open" : ""}`}>
         <div className="toolbar-accordion-inner">
-          <ButtonRow
-            editor={editor}
-            ai={ai}
-            autocompleteEnabled={autocompleteEnabled}
-            aiPanelOpen={aiPanelOpen}
-            onToggleAiPanel={onToggleAiPanel}
-          />
+          <FormatGroups editor={editor} />
           <button
             type="button"
             className={`toolbar-pin${pinned ? " is-pinned" : ""}`}

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import './App.css'
 import { Editor } from './components/Editor/Editor'
 import { Toolbar } from './components/Editor/Toolbar'
@@ -21,6 +21,7 @@ export default function App() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [summaryOpen, setSummaryOpen] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
+  const aiButtonRef = useRef<HTMLButtonElement>(null)
 
   const { t } = useI18n()
   const { theme, toggleTheme } = useTheme()
@@ -74,6 +75,7 @@ export default function App() {
         autocompleteEnabled={tools.config.autocomplete.enabled}
         aiPanelOpen={aiPanelOpen}
         onToggleAiPanel={() => setAiPanelOpen((v) => !v)}
+        aiButtonRef={aiButtonRef}
       />
 
       <AiPanel
@@ -87,6 +89,7 @@ export default function App() {
           setSummaryOpen(true)
         }}
         onAiInsertion={lastAiEdit.record}
+        anchorRef={aiButtonRef}
       />
 
       <SummaryModal open={summaryOpen} onClose={() => setSummaryOpen(false)} editor={editor} ai={ai} />

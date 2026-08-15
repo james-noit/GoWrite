@@ -284,7 +284,8 @@
   line-height: 1;
 }
 
-.theme-toggle-track {
+.theme-toggle-track,
+.switch-track {
   position: relative;
   width: 38px;
   height: 20px;
@@ -293,11 +294,13 @@
   transition: background-color var(--dur-med) var(--ease);
 }
 
-.theme-toggle-track.is-dark {
+.theme-toggle-track.is-dark,
+.switch-track.is-on {
   background: var(--accent);
 }
 
-.theme-toggle-thumb {
+.theme-toggle-thumb,
+.switch-thumb {
   position: absolute;
   top: 2px;
   left: 2px;
@@ -309,7 +312,8 @@
   transition: transform var(--dur-med) var(--ease);
 }
 
-.theme-toggle-track.is-dark .theme-toggle-thumb {
+.theme-toggle-track.is-dark .theme-toggle-thumb,
+.switch-track.is-on .switch-thumb {
   transform: translateX(18px);
 }
 
@@ -403,24 +407,32 @@
   z-index: 10;
 }
 
-.format-bar-inline {
-  display: none;
+/* Top row: the AI Tools card always sits here, alongside either the inline format groups
+   (desktop) or the "Formato" toggle (mobile) — never hidden inside the formatting accordion. */
+
+.format-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
 }
 
-/* Mobile: an accordion "tab" hangs off the bottom of the bar instead of an inline row */
+.format-bar-inline {
+  display: none;
+  min-width: 0;
+}
 
 .format-tab {
-  display: block;
-  margin: 0 auto;
-  padding: 4px 18px 6px;
+  flex-shrink: 0;
+  padding: 0 16px;
+  height: 60px;
   border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text-1);
   font-size: 0.78rem;
   font-weight: 600;
-  box-shadow: var(--shadow-sm);
   transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
@@ -484,19 +496,112 @@
 /* AI status card: a self-contained toggle that opens the AI panel, showing connection state at a glance. */
 
 .toolbar-ai-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
-  padding: 0 14px;
-  height: 48px;
+  align-self: stretch;
+  padding: 6px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--bg-1)), color-mix(in srgb, var(--accent-2) 10%, var(--bg-1)));
   color: var(--text-1);
   font-size: 0.78rem;
   font-weight: 600;
+  overflow: hidden;
   transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+/* One-shot welcome effect, played once on initial page load: a multicolour ring spins around
+   the border, then a light reflection sweeps across, then the card pops slightly and settles. */
+
+.toolbar-ai-card.ai-intro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(from 0deg, var(--accent), var(--accent-2), var(--success), #f5a524, var(--accent));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  animation: ai-intro-spin 0.9s ease-in-out both;
+}
+
+.toolbar-ai-card.ai-intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
+  opacity: 0;
+  pointer-events: none;
+  animation: ai-intro-reflect 0.6s ease-in 0.9s both;
+}
+
+.toolbar-ai-card.ai-intro {
+  animation: ai-intro-pop 0.4s ease-out 1.5s both;
+}
+
+@keyframes ai-intro-spin {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes ai-intro-reflect {
+  0% {
+    transform: translateX(-150%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(150%);
+    opacity: 0;
+  }
+}
+
+@keyframes ai-intro-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.toolbar-ai-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
+.toolbar-ai-meta {
+  display: none;
 }
 
 .toolbar-ai-card:hover {
@@ -585,7 +690,7 @@
 @media (min-width: 768px) {
   .format-bar-inline {
     display: flex;
-    padding: 8px;
+    padding: 0;
   }
 
   .format-tab {
@@ -601,7 +706,6 @@
     justify-content: center;
     overflow-x: auto;
     padding: 0;
-    width: 100%;
   }
 
   .toolbar-group {
@@ -613,6 +717,22 @@
 
   .toolbar-group + .toolbar-group {
     border-left: 1px solid var(--border);
+  }
+
+  .toolbar-ai-meta {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--text-2);
+    white-space: nowrap;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .toolbar-ai-card:hover .toolbar-ai-meta,
+  .toolbar-ai-card.is-open .toolbar-ai-meta {
+    color: var(--text-1);
   }
 }
 
@@ -1092,11 +1212,34 @@
 
 /* ---------- AI tool cards ---------- */
 
+.tool-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .tool-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 8px;
+}
+
+.tool-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.tool-toggle-label svg {
+  flex-shrink: 0;
+  color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.tool-toggle.is-on .tool-toggle-label svg {
+  color: var(--accent);
 }
 
 .tool-toggle {
@@ -1161,6 +1304,23 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+.tool-enable-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--text-0) 3%, transparent);
+}
+
+.tool-enable-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-1);
 }
 
 .tool-flash {
@@ -1285,14 +1445,39 @@
   }
 
   .ai-panel-backdrop {
-    align-items: center;
-    justify-content: flex-end;
-    padding: 20px;
+    /* On desktop the panel anchors to its trigger button (positioned via inline style from JS)
+       instead of docking to the screen edge, so the backdrop is just a transparent click-catcher. */
+    background: transparent;
+    align-items: flex-start;
+    justify-content: flex-start;
   }
 
   .ai-panel {
-    max-width: 380px;
-    max-height: calc(100dvh - 40px);
+    width: 380px;
+    max-width: calc(100vw - 20px);
     border-radius: var(--radius-lg);
+    animation: popover-in var(--dur-fast) var(--ease);
+  }
+
+  .ai-panel-caret {
+    width: 14px;
+    height: 14px;
+    background: var(--surface-menu);
+    border-left: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    border-radius: 3px 0 0 0;
+    transform: translateX(-50%) rotate(45deg);
+    box-shadow: -2px -2px 4px -2px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@keyframes popover-in {
+  from {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
