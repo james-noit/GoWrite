@@ -3,161 +3,8 @@ import { useEffect, useReducer, useRef, useState, type RefObject } from "react";
 import type { UseAiConnection } from "../../hooks/useAiConnection";
 import { useI18n } from "../../hooks/useI18n";
 import type { TranslationKey } from "../../lib/i18n/translations";
-import {
-  AddColumnIcon,
-  AddRowIcon,
-  CellFormatIcon,
-  DeleteColumnIcon,
-  DeleteRowIcon,
-  InsertTableIcon,
-} from "../icons";
-
-type TFunction = (key: TranslationKey) => string;
-
-interface ToolbarButton {
-  label?: string;
-  labelKey?: TranslationKey;
-  titleKey: TranslationKey;
-  isActive?: (editor: Editor) => boolean;
-  isDisabled?: (editor: Editor) => boolean;
-  run: (editor: Editor, t: TFunction) => void;
-}
-
-interface ToolbarGroup {
-  labelKey: TranslationKey;
-  buttons: ToolbarButton[];
-}
-
-const groups: ToolbarGroup[] = [
-  {
-    labelKey: "toolbar.group.font",
-    buttons: [
-      {
-        label: "B",
-        titleKey: "toolbar.bold",
-        isActive: (e) => e.isActive("bold"),
-        run: (e) => e.chain().focus().toggleBold().run(),
-      },
-      {
-        label: "I",
-        titleKey: "toolbar.italic",
-        isActive: (e) => e.isActive("italic"),
-        run: (e) => e.chain().focus().toggleItalic().run(),
-      },
-      {
-        label: "U",
-        titleKey: "toolbar.underline",
-        isActive: (e) => e.isActive("underline"),
-        run: (e) => e.chain().focus().toggleUnderline().run(),
-      },
-      {
-        label: "S",
-        titleKey: "toolbar.strike",
-        isActive: (e) => e.isActive("strike"),
-        run: (e) => e.chain().focus().toggleStrike().run(),
-      },
-    ],
-  },
-  {
-    labelKey: "toolbar.group.style",
-    buttons: [
-      {
-        label: "H1",
-        titleKey: "toolbar.h1",
-        isActive: (e) => e.isActive("heading", { level: 1 }),
-        run: (e) => e.chain().focus().toggleHeading({ level: 1 }).run(),
-      },
-      {
-        label: "H2",
-        titleKey: "toolbar.h2",
-        isActive: (e) => e.isActive("heading", { level: 2 }),
-        run: (e) => e.chain().focus().toggleHeading({ level: 2 }).run(),
-      },
-      {
-        label: "H3",
-        titleKey: "toolbar.h3",
-        isActive: (e) => e.isActive("heading", { level: 3 }),
-        run: (e) => e.chain().focus().toggleHeading({ level: 3 }).run(),
-      },
-    ],
-  },
-  {
-    labelKey: "toolbar.group.lists",
-    buttons: [
-      {
-        label: "•",
-        titleKey: "toolbar.bulletList",
-        isActive: (e) => e.isActive("bulletList"),
-        run: (e) => e.chain().focus().toggleBulletList().run(),
-      },
-      {
-        label: "1.",
-        titleKey: "toolbar.orderedList",
-        isActive: (e) => e.isActive("orderedList"),
-        run: (e) => e.chain().focus().toggleOrderedList().run(),
-      },
-    ],
-  },
-  {
-    labelKey: "toolbar.group.insert",
-    buttons: [
-      {
-        label: "❝",
-        titleKey: "toolbar.blockquote",
-        isActive: (e) => e.isActive("blockquote"),
-        run: (e) => e.chain().focus().toggleBlockquote().run(),
-      },
-      {
-        label: "</>",
-        titleKey: "toolbar.codeBlock",
-        isActive: (e) => e.isActive("codeBlock"),
-        run: (e) => e.chain().focus().toggleCodeBlock().run(),
-      },
-      {
-        label: "🔗",
-        titleKey: "toolbar.link",
-        isActive: (e) => e.isActive("link"),
-        run: (e, t) => {
-          if (e.isActive("link")) {
-            e.chain().focus().unsetLink().run();
-            return;
-          }
-          const url = window.prompt(t("toolbar.linkPrompt"));
-          if (url) e.chain().focus().setLink({ href: url }).run();
-        },
-      },
-    ],
-  },
-  {
-    labelKey: "toolbar.group.align",
-    buttons: [
-      {
-        label: "⟸",
-        titleKey: "toolbar.alignLeft",
-        isActive: (e) => e.isActive({ textAlign: "left" }),
-        run: (e) => e.chain().focus().setTextAlign("left").run(),
-      },
-      {
-        label: "⟺",
-        titleKey: "toolbar.alignCenter",
-        isActive: (e) => e.isActive({ textAlign: "center" }),
-        run: (e) => e.chain().focus().setTextAlign("center").run(),
-      },
-      {
-        label: "⟹",
-        titleKey: "toolbar.alignRight",
-        isActive: (e) => e.isActive({ textAlign: "right" }),
-        run: (e) => e.chain().focus().setTextAlign("right").run(),
-      },
-      {
-        label: "☰",
-        titleKey: "toolbar.alignJustify",
-        isActive: (e) => e.isActive({ textAlign: "justify" }),
-        run: (e) => e.chain().focus().setTextAlign("justify").run(),
-      },
-    ],
-  },
-];
+import { formatGroups as groups, type TFunction, type ToolbarButton } from "./formatGroups";
+import { insertTableAction, tableEditActions } from "./tableActions";
 
 interface AiStatusCardProps {
   ai: UseAiConnection;
@@ -342,64 +189,28 @@ function TableControls({ editor }: { editor: Editor }) {
       <div className="toolbar-group-buttons">
         <button
           type="button"
-          title={t("toolbar.insertTable")}
+          title={t(insertTableAction.titleKey)}
           className="toolbar-btn toolbar-btn--labelled"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          onClick={() => insertTableAction.run(editor)}
         >
-          <InsertTableIcon />
+          <insertTableAction.icon />
           {t("toolbar.insertTableLabel")}
         </button>
 
-        {inTable && (
-          <>
+        {inTable &&
+          tableEditActions.map((action) => (
             <button
+              key={action.key}
               type="button"
-              title={t("toolbar.addColumn")}
-              className="toolbar-btn"
+              title={t(action.titleKey)}
+              className={`toolbar-btn${action.isActive?.(editor) ? " is-active" : ""}`}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              onClick={() => action.run(editor)}
             >
-              <AddColumnIcon />
+              <action.icon />
             </button>
-            <button
-              type="button"
-              title={t("toolbar.addRow")}
-              className="toolbar-btn"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => editor.chain().focus().addRowAfter().run()}
-            >
-              <AddRowIcon />
-            </button>
-            <button
-              type="button"
-              title={t("toolbar.deleteColumn")}
-              className="toolbar-btn"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => editor.chain().focus().deleteColumn().run()}
-            >
-              <DeleteColumnIcon />
-            </button>
-            <button
-              type="button"
-              title={t("toolbar.deleteRow")}
-              className="toolbar-btn"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => editor.chain().focus().deleteRow().run()}
-            >
-              <DeleteRowIcon />
-            </button>
-            <button
-              type="button"
-              title={t("toolbar.cellFormat")}
-              className={`toolbar-btn${editor.isActive("tableHeader") ? " is-active" : ""}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => editor.chain().focus().toggleHeaderCell().run()}
-            >
-              <CellFormatIcon />
-            </button>
-          </>
-        )}
+          ))}
       </div>
     </div>
   );

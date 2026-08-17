@@ -7,6 +7,7 @@ import { useI18n } from '../../hooks/useI18n'
 import { continuationMessages, editMessages, generate, scopeText } from '../../lib/ai/actions'
 import { providerList } from '../../lib/ai/providers'
 import { textToHtml } from '../../lib/text'
+import type { TranslationKey } from '../../lib/i18n/translations'
 import type { ConnectionStatus } from '../../types'
 import { FunnyLoader } from '../FunnyLoader'
 import { AutocompleteIcon, AutoGenerateIcon, SummarizeIcon } from '../icons'
@@ -17,7 +18,7 @@ interface AiPanelProps {
   editor: Editor | null
   ai: UseAiConnection
   tools: UseAiTools
-  onOpenSummary: () => void
+  onOpenSummary: (text: string, titleKey: TranslationKey) => void
   onAiInsertion: (from: number, to: number) => void
   anchorRef: RefObject<HTMLButtonElement>
 }
@@ -325,7 +326,16 @@ export function AiPanel({ open, onClose, editor, ai, tools, onOpenSummary, onAiI
             {expandedTool === 'summarize' && (
               <div className="tool-body">
                 <p className="field-hint">{t('ai.summarizeHint')}</p>
-                <button type="button" className="connect-btn" disabled={!ai.isConnected} onClick={onOpenSummary}>
+                <button
+                  type="button"
+                  className="connect-btn"
+                  disabled={!ai.isConnected}
+                  onClick={() => {
+                    if (!editor) return
+                    const scope = scopeText(editor)
+                    onOpenSummary(scope.text, scope.hasSelection ? 'summary.titleSelection' : 'summary.titleDocument')
+                  }}
+                >
                   {t('ai.generateSummary')}
                 </button>
               </div>

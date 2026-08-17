@@ -1,16 +1,20 @@
-import type { Editor } from '@tiptap/core'
-import { Document, Packer, Paragraph } from 'docx'
 import { useEffect, useRef, useState } from 'react'
+import { Document, Packer, Paragraph } from 'docx'
 import type { UseAiConnection } from '../hooks/useAiConnection'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useI18n } from '../hooks/useI18n'
-import { generate, scopeText, summaryMessages } from '../lib/ai/actions'
+import type { TranslationKey } from '../lib/i18n/translations'
+import { generate, summaryMessages } from '../lib/ai/actions'
 import { FunnyLoader } from './FunnyLoader'
 
+export interface SummaryRequest {
+  text: string
+  titleKey: TranslationKey
+}
+
 interface SummaryModalProps {
-  open: boolean
+  request: SummaryRequest | null
   onClose: () => void
-  editor: Editor | null
   ai: UseAiConnection
 }
 
@@ -25,16 +29,18 @@ function download(blob: Blob, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-export function SummaryModal({ open, onClose, editor, ai }: SummaryModalProps) {
+export function SummaryModal({ request, onClose, ai }: SummaryModalProps) {
   const { t } = useI18n()
   const [text, setText] = useState('')
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [hasSelection, setHasSelection] = useState(false)
+  const [copied, setCopied] = useState(false)
   const controllerRef = useRef<AbortController | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
   const aiRef = useRef(ai)
   aiRef.current = ai
+
+  const open = !!request
 
   useFocusTrap(modalRef, open)
 
@@ -48,13 +54,12 @@ export function SummaryModal({ open, onClose, editor, ai }: SummaryModalProps) {
   }, [open, onClose])
 
   useEffect(() => {
-    if (!open || !editor) return
+    if (!request) return
     setText('')
     setError(null)
+    setCopied(false)
 
-    const scope = scopeText(editor)
-    setHasSelection(scope.hasSelection)
-    const source = scope.text
+    const source = request.text
     if (!source.trim()) {
       setError(t('summary.noText'))
       return
@@ -82,9 +87,19 @@ export function SummaryModal({ open, onClose, editor, ai }: SummaryModalProps) {
 
     return () => controller.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editor])
+  }, [request])
 
-  if (!open) return null
+  if (!request) return null
+
+  const copyText = () => {
+    void navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopied(true)
+        window.setTimeout(() => setCopied(false), 1500)
+      })
+      .catch(() => {})
+  }
 
   const baseName = t('summary.fileBaseName')
   const downloadTxt = () =>
@@ -113,7 +128,7 @@ export function SummaryModal({ open, onClose, editor, ai }: SummaryModalProps) {
         aria-labelledby="summary-modal-title"
       >
         <div className="ai-panel-header">
-          <h2 id="summary-modal-title">{hasSelection ? t('summary.titleSelection') : t('summary.titleDocument')}</h2>
+          <h2 id="summary-modal-title">{t(request.titleKey)}</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label={t('common.close')}>
             ✕
           </button>
@@ -145,6 +160,9 @@ export function SummaryModal({ open, onClose, editor, ai }: SummaryModalProps) {
           ) : (
             text && (
               <>
+                <button type="button" className="connect-btn connect-btn--ghost" onClick={copyText}>
+                  {copied ? t('summary.copied') : t('summary.copy')}
+                </button>
                 <span className="download-label">{t('summary.downloadLabel')}</span>
                 <button type="button" className="connect-btn connect-btn--ghost" onClick={downloadTxt}>
                   .txt

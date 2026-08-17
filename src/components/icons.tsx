@@ -101,6 +101,17 @@ export function DeleteRowIcon() {
   )
 }
 
+export function GiveFormatIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="4" y1="6" x2="15" y2="6" />
+      <line x1="4" y1="12" x2="12" y2="12" />
+      <line x1="4" y1="18" x2="9" y2="18" />
+      <path d="M19 13l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z" />
+    </svg>
+  )
+}
+
 export function CellFormatIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

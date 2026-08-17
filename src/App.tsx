@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import './App.css'
+import { ContextMenu } from './components/Editor/ContextMenu'
 import { Editor } from './components/Editor/Editor'
 import { Toolbar } from './components/Editor/Toolbar'
 import { useGoWriteEditor } from './components/Editor/useGoWriteEditor'
@@ -15,11 +16,13 @@ import { useI18n } from './hooks/useI18n'
 import { useLastAiEdit } from './hooks/useLastAiEdit'
 import { useTheme } from './hooks/useTheme'
 import { exportAs, formatRegistry, importFile } from './lib/formats'
+import type { TranslationKey } from './lib/i18n/translations'
+import type { SummaryRequest } from './components/SummaryModal'
 import type { FormatId } from './types'
 
 export default function App() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
-  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [summaryRequest, setSummaryRequest] = useState<SummaryRequest | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const aiButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -57,6 +60,11 @@ export default function App() {
 
   const { containerRef, isDragOver } = useDragAndDrop(handleImportFile)
 
+  const openSummary = useCallback((text: string, titleKey: TranslationKey) => {
+    setAiPanelOpen(false)
+    setSummaryRequest({ text, titleKey })
+  }, [])
+
   return (
     <div className="app-shell">
       <Header
@@ -84,15 +92,14 @@ export default function App() {
         editor={editor}
         ai={ai}
         tools={tools}
-        onOpenSummary={() => {
-          setAiPanelOpen(false)
-          setSummaryOpen(true)
-        }}
+        onOpenSummary={openSummary}
         onAiInsertion={lastAiEdit.record}
         anchorRef={aiButtonRef}
       />
 
-      <SummaryModal open={summaryOpen} onClose={() => setSummaryOpen(false)} editor={editor} ai={ai} />
+      <SummaryModal request={summaryRequest} onClose={() => setSummaryRequest(null)} ai={ai} />
+
+      <ContextMenu editor={editor} ai={ai} onOpenSummary={openSummary} onAiInsertion={lastAiEdit.record} />
 
       <main className="app-main" ref={containerRef}>
         {importError && (

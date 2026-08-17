@@ -109,6 +109,35 @@ Devuelve únicamente el texto modificado completo.`,
   )
 }
 
+export interface FormatOptions {
+  paragraphs: boolean
+  punctuation: boolean
+  structure: boolean
+}
+
+export function formatMessages(text: string, options: FormatOptions): ChatMessage[] {
+  const rules: string[] = []
+  if (options.paragraphs) {
+    rules.push('- Organiza el texto en párrafos coherentes, con saltos de línea en blanco entre ellos.')
+  }
+  if (options.punctuation) {
+    rules.push('- Corrige mayúsculas, minúsculas, tildes y puntuación siguiendo las normas ortográficas.')
+  }
+  if (options.structure) {
+    rules.push(
+      '- Cuando el contenido lo sugiera, usa sintaxis Markdown (#, ##, -, 1.) para reflejar títulos y listas.',
+    )
+  }
+  return messagesFor(
+    `Da formato al contenido de <texto> sin cambiar su significado ni añadir información nueva. Instrucciones:
+${rules.join('\n')}
+- No resumas ni reescribas el contenido; conserva las palabras originales salvo los ajustes de formato indicados.
+- Devuelve el texto en Markdown simple, listo para insertarse en un editor.
+Devuelve únicamente el texto formateado.`,
+    text,
+  )
+}
+
 export async function generate(params: {
   messages: ChatMessage[]
   config: AiConfig

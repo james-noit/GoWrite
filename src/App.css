@@ -232,6 +232,136 @@
   }
 }
 
+/* ---------- Editor right-click context menu ---------- */
+
+.context-menu {
+  position: fixed;
+  z-index: 60;
+  width: 240px;
+  overflow-y: auto;
+  border-radius: var(--radius-md);
+  padding: 6px;
+  box-shadow: var(--shadow-lg);
+  animation: dropdown-in var(--dur-fast) var(--ease);
+}
+
+.context-menu-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.context-menu-group + .context-menu-group {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-1);
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.context-menu-item:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text-0);
+}
+
+.context-menu-item.is-active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.context-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.context-menu-item svg {
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+
+.context-menu-glyph {
+  flex-shrink: 0;
+  width: 22px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  text-align: center;
+}
+
+.context-menu-divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.context-menu-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px;
+  min-width: 0;
+}
+
+.context-menu-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px;
+}
+
+.context-menu-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-weight: 700;
+  font-size: 0.78rem;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.context-menu-icon-btn:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text-0);
+}
+
+.context-menu-icon-btn.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.context-menu-scope-row {
+  display: flex;
+  gap: 14px;
+  font-size: 0.85rem;
+  color: var(--text-1);
+}
+
+.context-menu-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-1);
+}
+
 .dropdown-item {
   display: flex;
   align-items: center;

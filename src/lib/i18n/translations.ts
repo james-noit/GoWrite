@@ -3,6 +3,7 @@ export type Locale = 'es' | 'en'
 export const translations = {
   es: {
     'common.close': 'Cerrar',
+    'common.cancel': 'Cancelar',
 
     'app.renameTitle': 'Haz clic para renombrar el documento',
     'app.importErrorDismiss': 'Cerrar',
@@ -71,6 +72,21 @@ export const translations = {
     'toolbar.fontBackground': 'Color de fondo',
     'toolbar.clearFormat': 'Quitar',
 
+    'contextMenu.summarizeSelection': 'Resumir selección',
+    'contextMenu.summarizeBefore': 'Resumir hasta aquí',
+    'contextMenu.summarizeAfter': 'Resumir el resto',
+    'contextMenu.summarizeDocument': 'Resumir documento',
+    'contextMenu.editWithAi': 'Editar con IA',
+    'contextMenu.editWithAiPlaceholder': 'Ej: hazlo más formal',
+    'contextMenu.autogenerate': 'Autogenerar desde aquí',
+    'contextMenu.giveFormat': 'Dar formato',
+    'contextMenu.giveFormatScope': 'Ámbito',
+    'contextMenu.giveFormatScopeSelection': 'Selección',
+    'contextMenu.giveFormatScopeDocument': 'Documento completo',
+    'contextMenu.giveFormatOptionParagraphs': 'Párrafos y espaciado',
+    'contextMenu.giveFormatOptionPunctuation': 'Mayúsculas y puntuación',
+    'contextMenu.giveFormatOptionStructure': 'Títulos y listas',
+
     'editor.placeholder': 'Empieza a escribir o arrastra un archivo (.md, .docx, .odt, .txt)…',
     'editor.dropHint': 'Suelta el archivo para importarlo',
     'editor.words': 'palabras',
@@ -124,13 +140,18 @@ export const translations = {
 
     'summary.titleDocument': 'Resumen del documento',
     'summary.titleSelection': 'Resumen de la selección',
+    'summary.titleBefore': 'Resumen del texto anterior',
+    'summary.titleAfter': 'Resumen del texto restante',
     'summary.noText': 'No hay texto que resumir. Escribe algo primero.',
     'summary.downloadLabel': 'Descargar como:',
     'summary.fileBaseName': 'resumen',
     'summary.genericError': 'Error al generar el resumen.',
+    'summary.copy': 'Copiar',
+    'summary.copied': '✓ Copiado',
   },
   en: {
     'common.close': 'Close',
+    'common.cancel': 'Cancel',
 
     'app.renameTitle': 'Click to rename the document',
     'app.importErrorDismiss': 'Close',
@@ -199,6 +220,21 @@ export const translations = {
     'toolbar.fontBackground': 'Background color',
     'toolbar.clearFormat': 'Clear',
 
+    'contextMenu.summarizeSelection': 'Summarize selection',
+    'contextMenu.summarizeBefore': 'Summarize up to here',
+    'contextMenu.summarizeAfter': 'Summarize the rest',
+    'contextMenu.summarizeDocument': 'Summarize document',
+    'contextMenu.editWithAi': 'Edit with AI',
+    'contextMenu.editWithAiPlaceholder': 'E.g.: make it more formal',
+    'contextMenu.autogenerate': 'Autogenerate from here',
+    'contextMenu.giveFormat': 'Give format',
+    'contextMenu.giveFormatScope': 'Scope',
+    'contextMenu.giveFormatScopeSelection': 'Selection',
+    'contextMenu.giveFormatScopeDocument': 'Whole document',
+    'contextMenu.giveFormatOptionParagraphs': 'Paragraphs & spacing',
+    'contextMenu.giveFormatOptionPunctuation': 'Capitalization & punctuation',
+    'contextMenu.giveFormatOptionStructure': 'Headings & lists',
+
     'editor.placeholder': 'Start typing or drag a file here (.md, .docx, .odt, .txt)…',
     'editor.dropHint': 'Drop the file to import it',
     'editor.words': 'words',
@@ -252,10 +288,14 @@ export const translations = {
 
     'summary.titleDocument': 'Document summary',
     'summary.titleSelection': 'Selection summary',
+    'summary.titleBefore': 'Summary of the preceding text',
+    'summary.titleAfter': 'Summary of the remaining text',
     'summary.noText': 'There is no text to summarize. Write something first.',
     'summary.downloadLabel': 'Download as:',
     'summary.fileBaseName': 'summary',
     'summary.genericError': 'Error generating the summary.',
+    'summary.copy': 'Copy',
+    'summary.copied': '✓ Copied',
   },
 } as const
 
