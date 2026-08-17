@@ -5,7 +5,7 @@ import type { Theme } from '../types'
 function getInitialTheme(): Theme {
   const stored = themeStorage.get()
   if (stored) return stored
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return 'light'
 }
 
 export function useTheme() {

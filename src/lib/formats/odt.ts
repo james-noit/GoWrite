@@ -6,6 +6,7 @@ const NS = {
   office: 'urn:oasis:names:tc:opendocument:xmlns:office:1.0',
   style: 'urn:oasis:names:tc:opendocument:xmlns:style:1.0',
   text: 'urn:oasis:names:tc:opendocument:xmlns:text:1.0',
+  table: 'urn:oasis:names:tc:opendocument:xmlns:table:1.0',
   fo: 'urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0',
   xlink: 'http://www.w3.org/1999/xlink',
 }
@@ -25,6 +26,16 @@ interface CharStyleFlags {
   italic?: boolean
   underline?: boolean
   strike?: boolean
+  color?: string
+  fontFamily?: string
+  fontSize?: string
+  highlight?: string
+}
+
+function ptToPx(pt: string): string {
+  const match = /^([\d.]+)pt$/.exec(pt.trim())
+  if (!match) return pt
+  return `${Math.round(parseFloat(match[1]) * (96 / 72))}px`
 }
 
 function collectCharStyles(xmlDoc: Document): Map<string, CharStyleFlags> {
@@ -39,11 +50,16 @@ function collectCharStyles(xmlDoc: Document): Map<string, CharStyleFlags> {
     if (!props) continue
     const underlineStyle = props.getAttributeNS(NS.style, 'text-underline-style')
     const strikeStyle = props.getAttributeNS(NS.style, 'text-line-through-style')
+    const fontSize = props.getAttributeNS(NS.fo, 'font-size')
     map.set(name, {
       bold: props.getAttributeNS(NS.fo, 'font-weight') === 'bold',
       italic: props.getAttributeNS(NS.fo, 'font-style') === 'italic',
       underline: !!underlineStyle && underlineStyle !== 'none',
       strike: !!strikeStyle && strikeStyle !== 'none',
+      color: props.getAttributeNS(NS.fo, 'color') || undefined,
+      fontFamily: props.getAttributeNS(NS.style, 'font-name') || undefined,
+      fontSize: fontSize ? ptToPx(fontSize) : undefined,
+      highlight: props.getAttributeNS(NS.fo, 'background-color') || undefined,
     })
   }
   return map
@@ -92,6 +108,14 @@ function wrapWithFlags(inner: string, flags: CharStyleFlags): string {
   if (flags.italic) html = `<em>${html}</em>`
   if (flags.underline) html = `<u>${html}</u>`
   if (flags.strike) html = `<s>${html}</s>`
+  const styleParts: string[] = []
+  if (flags.color) styleParts.push(`color: ${flags.color}`)
+  if (flags.fontFamily) styleParts.push(`font-family: ${flags.fontFamily}`)
+  if (flags.fontSize) styleParts.push(`font-size: ${flags.fontSize}`)
+  if (styleParts.length) html = `<span style="${escapeXml(styleParts.join('; '))}">${html}</span>`
+  if (flags.highlight) {
+    html = `<mark data-color="${escapeXml(flags.highlight)}" style="background-color: ${escapeXml(flags.highlight)}">${html}</mark>`
+  }
   return html
 }
 
@@ -121,6 +145,23 @@ function inlineNodeToHtml(node: ChildNode, charStyles: Map<string, CharStyleFlag
     return `<a href="${escapeXml(href)}">${childrenHtml}</a>`
   }
   return childrenHtml
+}
+
+/** Gathers a table's rows in document order, flattening any <table:table-header-rows> wrapper
+ * and recording how many leading rows came from it (so their cells can be rendered as <th>). */
+function collectTableRows(tableEl: Element): { rows: Element[]; headerRowCount: number } {
+  const rows: Element[] = []
+  let headerRowCount = 0
+  for (const child of Array.from(tableEl.children)) {
+    if (child.localName === 'table-header-rows') {
+      const headerRows = Array.from(child.children).filter((c) => c.localName === 'table-row')
+      rows.push(...headerRows)
+      headerRowCount += headerRows.length
+    } else if (child.localName === 'table-row') {
+      rows.push(child)
+    }
+  }
+  return { rows, headerRowCount }
 }
 
 function blockNodeToHtml(
@@ -161,6 +202,27 @@ function blockNodeToHtml(
       })
       .join('')
     return `<${tag}>${items}</${tag}>`
+  }
+  if (local === 'table') {
+    const { rows, headerRowCount } = collectTableRows(node)
+    const rowsHtml = rows
+      .map((rowEl, rowIndex) => {
+        const isHeaderRow = rowIndex < headerRowCount
+        const cellsHtml = Array.from(rowEl.children)
+          .filter((c) => c.localName === 'table-cell')
+          .map((cellEl) => {
+            const blocks = Array.from(cellEl.children).filter((c) => c.localName === 'p' || c.localName === 'h')
+            const innerHtml = blocks.map((b) => blockNodeToHtml(b, charStyles, listKinds, paraAlign)).join('') || '<p></p>'
+            const isHeaderCell =
+              isHeaderRow || blocks.some((b) => b.getAttributeNS(NS.text, 'style-name') === 'TableHeader')
+            const tag = isHeaderCell ? 'th' : 'td'
+            return `<${tag}>${innerHtml}</${tag}>`
+          })
+          .join('')
+        return `<tr>${cellsHtml}</tr>`
+      })
+      .join('')
+    return `<table><tbody>${rowsHtml}</tbody></table>`
   }
   // unknown container: recurse into element children
   return Array.from(node.children)
@@ -208,7 +270,8 @@ const STYLES_XML = `<?xml version="1.0" encoding="UTF-8"?>
     <style:style style:name="Heading_2" style:display-name="Heading 2" style:family="paragraph" style:parent-style-name="Standard"><style:text-properties fo:font-size="18pt" fo:font-weight="bold"/></style:style>
     <style:style style:name="Heading_3" style:display-name="Heading 3" style:family="paragraph" style:parent-style-name="Standard"><style:text-properties fo:font-size="14pt" fo:font-weight="bold"/></style:style>
     <style:style style:name="Quotations" style:family="paragraph" style:parent-style-name="Standard"><style:paragraph-properties fo:margin-left="0.5in"/><style:text-properties fo:font-style="italic"/></style:style>
-    <style:style style:name="Preformatted_Text" style:display-name="Preformatted Text" style:family="paragraph" style:parent-style-name="Standard"><style:text-properties style:font-name="Consolas"/></style:style>
+    <style:style style:name="Preformatted_Text" style:display-name="Preformatted Text" style:family="paragraph" style:parent-style-name="Standard"><style:paragraph-properties fo:background-color="#F0F0F0"/><style:text-properties style:font-name="Consolas" fo:background-color="#F0F0F0"/></style:style>
+    <style:style style:name="TableHeader" style:family="paragraph" style:parent-style-name="Standard"><style:text-properties fo:font-weight="bold"/></style:style>
   </office:styles>
 </office:document-styles>`
 
@@ -226,11 +289,14 @@ const ODT_ALIGN: Record<string, string> = {
   justify: 'justify',
 }
 
+type Mark = { type: string; attrs?: Record<string, unknown> }
+
 function buildContentXml(json: JSONContent): string {
   const charStyleMap = new Map<string, string>()
   const charStyleDefs: string[] = []
   const paraStyleMap = new Map<string, string>()
   const paraStyleDefs: string[] = []
+  let tableCount = 0
 
   function styleForAlign(baseStyle: string, textAlign: string | undefined): string {
     if (!textAlign || !ODT_ALIGN[textAlign]) return baseStyle
@@ -245,11 +311,11 @@ function buildContentXml(json: JSONContent): string {
     return name
   }
 
-  function getOrCreateCharStyle(marks: { type: string }[]): string {
+  function getOrCreateCharStyle(marks: Mark[]): string {
     const key = marks
-      .map((m) => m.type)
+      .map((m) => `${m.type}:${JSON.stringify(m.attrs ?? {})}`)
       .sort()
-      .join('+')
+      .join('|')
     const existing = charStyleMap.get(key)
     if (existing) return existing
     const name = `Tc${charStyleMap.size}`
@@ -259,12 +325,26 @@ function buildContentXml(json: JSONContent): string {
     const underline = marks.some((m) => m.type === 'underline')
     const strike = marks.some((m) => m.type === 'strike')
     const code = marks.some((m) => m.type === 'code')
+    const textStyleMark = marks.find((m) => m.type === 'textStyle')
+    const highlightMark = marks.find((m) => m.type === 'highlight')
+    const color = textStyleMark?.attrs?.color as string | undefined
+    const fontFamily = (textStyleMark?.attrs?.fontFamily as string | undefined)
+      ?.split(',')[0]
+      ?.replace(/["']/g, '')
+      .trim()
+    const fontSize = textStyleMark?.attrs?.fontSize as string | undefined
+    const fontSizePt = fontSize ? `${(parseFloat(fontSize) * 0.75).toFixed(2)}pt` : undefined
+    const highlightColor = highlightMark?.attrs?.color as string | undefined
     const props = [
       bold ? 'fo:font-weight="bold"' : '',
       italic ? 'fo:font-style="italic"' : '',
       underline ? 'style:text-underline-style="solid" style:text-underline-width="auto" style:text-underline-color="font-color"' : '',
       strike ? 'style:text-line-through-style="solid"' : '',
       code ? 'style:font-name="Consolas"' : '',
+      fontFamily ? `style:font-name="${escapeXml(fontFamily)}"` : '',
+      color ? `fo:color="${escapeXml(color)}"` : '',
+      fontSizePt ? `fo:font-size="${fontSizePt}"` : '',
+      highlightColor ? `fo:background-color="${escapeXml(highlightColor)}"` : '',
     ]
       .filter(Boolean)
       .join(' ')
@@ -277,7 +357,7 @@ function buildContentXml(json: JSONContent): string {
       .map((node) => {
         if (node.type === 'hardBreak') return '<text:line-break/>'
         if (node.type !== 'text') return ''
-        const marks = node.marks ?? []
+        const marks = (node.marks ?? []) as Mark[]
         const text = escapeXml(node.text ?? '')
         const linkMark = marks.find((m) => m.type === 'link')
         const styleMarks = marks.filter((m) => m.type !== 'link')
@@ -311,6 +391,37 @@ function buildContentXml(json: JSONContent): string {
     return `<text:list text:style-name="${styleName}">${items}</text:list>`
   }
 
+  function tableToOdt(node: JSONContent): string {
+    tableCount += 1
+    const tableName = `Table${tableCount}`
+    const columnCount = (node.content?.[0]?.content ?? []).length
+    const columnsXml = columnCount > 0 ? `<table:table-column table:number-columns-repeated="${columnCount}"/>` : ''
+
+    const rows = node.content ?? []
+    const headerRows = rows.filter((row) => (row.content ?? []).every((cell) => cell.type === 'tableHeader'))
+    const bodyRows = rows.filter((row) => !(row.content ?? []).every((cell) => cell.type === 'tableHeader'))
+
+    const rowToOdt = (row: JSONContent) => {
+      const cellsXml = (row.content ?? [])
+        .map((cell) => {
+          const isHeader = cell.type === 'tableHeader'
+          const cellBody = (cell.content ?? [])
+            .map((child) => blockToOdt(child, isHeader ? 'TableHeader' : 'Standard'))
+            .join('')
+          return `<table:table-cell office:value-type="string">${cellBody || '<text:p/>'}</table:table-cell>`
+        })
+        .join('')
+      return `<table:table-row>${cellsXml}</table:table-row>`
+    }
+
+    const headerXml = headerRows.length
+      ? `<table:table-header-rows>${headerRows.map(rowToOdt).join('')}</table:table-header-rows>`
+      : ''
+    const bodyXml = bodyRows.map(rowToOdt).join('')
+
+    return `<table:table table:name="${tableName}">${columnsXml}${headerXml}${bodyXml}</table:table>`
+  }
+
   function blockToOdt(node: JSONContent, paragraphStyle: string): string {
     switch (node.type) {
       case 'paragraph': {
@@ -328,6 +439,8 @@ function buildContentXml(json: JSONContent): string {
         return listToOdt(node, 'LB')
       case 'orderedList':
         return listToOdt(node, 'LN')
+      case 'table':
+        return tableToOdt(node)
       case 'codeBlock': {
         const text = (node.content ?? []).map((t) => t.text ?? '').join('')
         return text
@@ -345,7 +458,7 @@ function buildContentXml(json: JSONContent): string {
   const bodyXml = (json.content ?? []).map((node) => blockToOdt(node, 'Standard')).join('')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<office:document-content xmlns:office="${NS.office}" xmlns:style="${NS.style}" xmlns:text="${NS.text}" xmlns:fo="${NS.fo}" xmlns:xlink="${NS.xlink}" office:version="1.2">
+<office:document-content xmlns:office="${NS.office}" xmlns:style="${NS.style}" xmlns:text="${NS.text}" xmlns:table="${NS.table}" xmlns:fo="${NS.fo}" xmlns:xlink="${NS.xlink}" office:version="1.2">
   <office:automatic-styles>
     ${charStyleDefs.join('\n    ')}
     ${paraStyleDefs.join('\n    ')}

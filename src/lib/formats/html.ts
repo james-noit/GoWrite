@@ -15,7 +15,14 @@ export const htmlFormat: FormatDefinition = {
     editor.commands.setContent(parsed.body.innerHTML)
   },
   async exportContent(editor) {
-    const html = `<!doctype html><html><head><meta charset="utf-8"></head><body>${editor.getHTML()}</body></html>`
+    const style = `
+      pre { background: #f0f0f0; border-radius: 4px; padding: 12px 14px; overflow-x: auto; }
+      code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+      table { border-collapse: collapse; }
+      td, th { border: 1px solid #999; padding: 6px 10px; }
+      th { background: #f0f0f0; }
+    `
+    const html = `<!doctype html><html><head><meta charset="utf-8"><style>${style}</style></head><body>${editor.getHTML()}</body></html>`
     return new Blob([html], { type: 'text/html;charset=utf-8' })
   },
 }

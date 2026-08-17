@@ -41,7 +41,7 @@ export function Header({
   return (
     <header className="app-header glass-panel">
       <div className="app-header-left">
-        <span className="app-brand">GoWrite</span>
+        <FileMenu onImport={onImport} onExport={onExport} theme={theme} onToggleTheme={onToggleTheme} docs={docs} />
         {isEditingTitle ? (
           <input
             className="app-filename-input"
@@ -82,7 +82,9 @@ export function Header({
       </div>
 
       <div className="app-header-right">
-        <FileMenu onImport={onImport} onExport={onExport} theme={theme} onToggleTheme={onToggleTheme} docs={docs} />
+        <span className="app-version" title={`GoWrite v${__APP_VERSION__}`}>
+          v{__APP_VERSION__}
+        </span>
       </div>
     </header>
   )

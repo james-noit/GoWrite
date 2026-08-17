@@ -55,6 +55,21 @@ export const translations = {
     'toolbar.group.lists': 'Listas',
     'toolbar.group.insert': 'Insertar',
     'toolbar.group.align': 'Alineación',
+    'toolbar.group.table': 'Tabla',
+
+    'toolbar.insertTable': 'Insertar tabla',
+    'toolbar.insertTableLabel': 'Añadir tabla',
+    'toolbar.addColumn': 'Añadir columna',
+    'toolbar.addRow': 'Añadir fila',
+    'toolbar.deleteColumn': 'Eliminar columna',
+    'toolbar.deleteRow': 'Eliminar fila',
+    'toolbar.cellFormat': 'Formato de celda (cabecera)',
+
+    'toolbar.fontColor': 'Color de texto',
+    'toolbar.fontFamily': 'Estilo de fuente',
+    'toolbar.fontSize': 'Tamaño de fuente',
+    'toolbar.fontBackground': 'Color de fondo',
+    'toolbar.clearFormat': 'Quitar',
 
     'editor.placeholder': 'Empieza a escribir o arrastra un archivo (.md, .docx, .odt, .txt)…',
     'editor.dropHint': 'Suelta el archivo para importarlo',
@@ -168,6 +183,21 @@ export const translations = {
     'toolbar.group.lists': 'Lists',
     'toolbar.group.insert': 'Insert',
     'toolbar.group.align': 'Alignment',
+    'toolbar.group.table': 'Table',
+
+    'toolbar.insertTable': 'Insert table',
+    'toolbar.insertTableLabel': 'Add table',
+    'toolbar.addColumn': 'Add column',
+    'toolbar.addRow': 'Add row',
+    'toolbar.deleteColumn': 'Delete column',
+    'toolbar.deleteRow': 'Delete row',
+    'toolbar.cellFormat': 'Cell format (header)',
+
+    'toolbar.fontColor': 'Text color',
+    'toolbar.fontFamily': 'Font style',
+    'toolbar.fontSize': 'Font size',
+    'toolbar.fontBackground': 'Background color',
+    'toolbar.clearFormat': 'Clear',
 
     'editor.placeholder': 'Start typing or drag a file here (.md, .docx, .odt, .txt)…',
     'editor.dropHint': 'Drop the file to import it',

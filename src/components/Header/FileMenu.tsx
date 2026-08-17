@@ -4,6 +4,7 @@ import { useI18n } from '../../hooks/useI18n'
 import type { Locale } from '../../lib/i18n/translations'
 import { formatList, importAccept } from '../../lib/formats'
 import type { FormatId, Theme } from '../../types'
+import { MenuIcon } from '../icons'
 import { ThemeToggle } from './ThemeToggle'
 
 interface FileMenuProps {
@@ -46,62 +47,20 @@ export function FileMenu({ onImport, onExport, theme, onToggleTheme, docs }: Fil
 
   return (
     <div className="menu-root" ref={rootRef}>
-      <button type="button" className="header-btn" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        {t('file.menuLabel')}
+      <button
+        type="button"
+        className="header-btn header-btn--brand"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={t('file.menuLabel')}
+        title={t('file.menuLabel')}
+      >
+        <MenuIcon />
+        <span className="app-brand">GoWrite</span>
       </button>
 
       {open && (
         <div className="dropdown glass-panel">
-          <button
-            type="button"
-            className="dropdown-item"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {t('file.import')}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={importAccept}
-            hidden
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) onImport(file)
-              e.target.value = ''
-              setOpen(false)
-            }}
-          />
-
-          <div className="dropdown-submenu-root">
-            <button
-              type="button"
-              className="dropdown-item"
-              onClick={() => setExportOpen((v) => !v)}
-            >
-              {t('file.exportAs')} <span className="chevron">{exportOpen ? '▾' : '▸'}</span>
-            </button>
-            {exportOpen && (
-              <div className="dropdown-submenu">
-                {formatList.map((format) => (
-                  <button
-                    key={format.id}
-                    type="button"
-                    className="dropdown-item"
-                    onClick={() => {
-                      onExport(format.id)
-                      setOpen(false)
-                      setExportOpen(false)
-                    }}
-                  >
-                    {format.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="dropdown-divider" />
-
           <button
             type="button"
             className="dropdown-item"
@@ -158,6 +117,56 @@ export function FileMenu({ onImport, onExport, theme, onToggleTheme, docs }: Fil
                       </button>
                     )}
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="dropdown-divider" />
+
+          <button
+            type="button"
+            className="dropdown-item"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {t('file.import')}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={importAccept}
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) onImport(file)
+              e.target.value = ''
+              setOpen(false)
+            }}
+          />
+
+          <div className="dropdown-submenu-root">
+            <button
+              type="button"
+              className="dropdown-item"
+              onClick={() => setExportOpen((v) => !v)}
+            >
+              {t('file.exportAs')} <span className="chevron">{exportOpen ? '▾' : '▸'}</span>
+            </button>
+            {exportOpen && (
+              <div className="dropdown-submenu">
+                {formatList.map((format) => (
+                  <button
+                    key={format.id}
+                    type="button"
+                    className="dropdown-item"
+                    onClick={() => {
+                      onExport(format.id)
+                      setOpen(false)
+                      setExportOpen(false)
+                    }}
+                  >
+                    {format.label}
+                  </button>
                 ))}
               </div>
             )}
