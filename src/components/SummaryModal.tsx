@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { Document, Packer, Paragraph } from 'docx'
 import type { UseAiConnection } from '../hooks/useAiConnection'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useI18n } from '../hooks/useI18n'
@@ -107,6 +106,7 @@ export function SummaryModal({ request, onClose, ai }: SummaryModalProps) {
   const downloadMd = () =>
     download(new Blob([text], { type: 'text/markdown;charset=utf-8' }), `${baseName}.md`)
   const downloadDocx = async () => {
+    const { Document, Packer, Paragraph } = await import('docx')
     const paragraphs = text
       .split(/\r?\n+/)
       .filter((line) => line.trim())
