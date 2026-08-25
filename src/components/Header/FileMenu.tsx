@@ -1,22 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import type { UseDocuments } from '../../hooks/useDocuments'
 import { useI18n } from '../../hooks/useI18n'
-import type { Locale } from '../../lib/i18n/translations'
 import { formatList, importAccept } from '../../lib/formats'
-import type { FormatId, Theme } from '../../types'
+import type { FormatId } from '../../types'
 import { MenuIcon } from '../icons'
-import { ThemeToggle } from './ThemeToggle'
 
 interface FileMenuProps {
   onImport: (file: File) => void
   onExport: (formatId: FormatId) => void
-  theme: Theme
-  onToggleTheme: () => void
+  onOpenSettings: () => void
   docs: UseDocuments
 }
 
-export function FileMenu({ onImport, onExport, theme, onToggleTheme, docs }: FileMenuProps) {
-  const { t, locale, setLocale } = useI18n()
+export function FileMenu({ onImport, onExport, onOpenSettings, docs }: FileMenuProps) {
+  const { t, locale } = useI18n()
   const [open, setOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [docsOpen, setDocsOpen] = useState(false)
@@ -174,41 +171,15 @@ export function FileMenu({ onImport, onExport, theme, onToggleTheme, docs }: Fil
 
           <div className="dropdown-divider" />
 
-          <div className="dropdown-item dropdown-item--static">
-            <span>{t('file.theme')}</span>
-            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-          </div>
-
-          <div className="dropdown-item dropdown-item--static">
-            <span>{t('file.language')}</span>
-            <div className="language-toggle">
-              {(['es', 'en'] as Locale[]).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  className={`language-btn${locale === l ? ' is-active' : ''}`}
-                  onClick={() => setLocale(l)}
-                >
-                  {l.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="dropdown-divider" />
-
           <button
             type="button"
-            className="dropdown-item dropdown-item--danger"
+            className="dropdown-item"
             onClick={() => {
-              const filename = docs.documents.find((d) => d.id === docs.currentId)?.filename ?? ''
-              if (window.confirm(`${t('file.clearStorageConfirmPrefix')}${filename}${t('file.clearStorageConfirmSuffix')}`)) {
-                docs.clearCurrentStorage()
-              }
+              onOpenSettings()
               setOpen(false)
             }}
           >
-            {t('file.clearStorage')}
+            {t('file.settings')}
           </button>
         </div>
       )}

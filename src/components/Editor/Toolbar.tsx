@@ -1,26 +1,19 @@
 import type { Editor } from "@tiptap/core";
-import { useEffect, useReducer, useRef, useState, type RefObject } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import type { UseAiConnection } from "../../hooks/useAiConnection";
 import { useI18n } from "../../hooks/useI18n";
 import type { TranslationKey } from "../../lib/i18n/translations";
 import { formatGroups as groups, type TFunction, type ToolbarButton } from "./formatGroups";
+import { formatPainter } from "./formatPainter";
 import { insertTableAction, tableEditActions } from "./tableActions";
 
 interface AiStatusCardProps {
   ai: UseAiConnection;
   autocompleteEnabled: boolean;
-  open: boolean;
-  onToggle: () => void;
-  buttonRef: RefObject<HTMLButtonElement>;
+  onOpen: () => void;
 }
 
-function AiStatusCard({
-  ai,
-  autocompleteEnabled,
-  open,
-  onToggle,
-  buttonRef,
-}: AiStatusCardProps) {
+function AiStatusCard({ ai, autocompleteEnabled, onOpen }: AiStatusCardProps) {
   const { t } = useI18n();
   const [showIntro, setShowIntro] = useState(false);
   const statusLabel = t(`ai.status.${ai.status}` as TranslationKey);
@@ -40,11 +33,10 @@ function AiStatusCard({
 
   return (
     <button
-      ref={buttonRef}
       type="button"
-      className={`toolbar-ai-card toolbar-ai-card--${ai.status}${open ? " is-open" : ""}${showIntro ? " ai-intro" : ""}`}
-      onClick={onToggle}
-      aria-expanded={open}
+      className={`toolbar-ai-card toolbar-ai-card--${ai.status}${showIntro ? " ai-intro" : ""}`}
+      onClick={onOpen}
+      aria-haspopup="dialog"
       title={`${t("ai.buttonLabel")} — ${statusLabel}`}
     >
       <span className="toolbar-ai-dot" aria-hidden="true" />
@@ -268,18 +260,14 @@ interface ToolbarProps {
   editor: Editor | null;
   ai: UseAiConnection;
   autocompleteEnabled: boolean;
-  aiPanelOpen: boolean;
-  onToggleAiPanel: () => void;
-  aiButtonRef: RefObject<HTMLButtonElement>;
+  onOpenAiSettings: () => void;
 }
 
 export function Toolbar({
   editor,
   ai,
   autocompleteEnabled,
-  aiPanelOpen,
-  onToggleAiPanel,
-  aiButtonRef,
+  onOpenAiSettings,
 }: ToolbarProps) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -298,6 +286,10 @@ export function Toolbar({
       editor.off("transaction", onTransaction);
     };
   }, [editor]);
+
+  // The format painter can deactivate itself outside of an editor transaction (e.g. the toolbar
+  // button toggling it off without editing the document), so it needs its own re-render trigger.
+  useEffect(() => formatPainter.subscribe(() => forceUpdate()), []);
 
   // On mobile, the accordion collapses when focus/clicks leave the toolbar — unless pinned.
   useEffect(() => {
@@ -334,13 +326,7 @@ export function Toolbar({
           {t("toolbar.format")} {menuOpen ? "▴" : "▾"}
         </button>
 
-        <AiStatusCard
-          ai={ai}
-          autocompleteEnabled={autocompleteEnabled}
-          open={aiPanelOpen}
-          onToggle={onToggleAiPanel}
-          buttonRef={aiButtonRef}
-        />
+        <AiStatusCard ai={ai} autocompleteEnabled={autocompleteEnabled} onOpen={onOpenAiSettings} />
       </div>
 
       <div className={`toolbar-accordion${menuOpen ? " is-open" : ""}`}>

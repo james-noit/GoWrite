@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { providerRegistry } from '../lib/ai/providers'
 import { testConnection } from '../lib/ai/testConnection'
 import { aiConfigStorage } from '../lib/storage'
+import { useI18n } from './useI18n'
 import type { AiConfig, AiProviderId, ConnectionStatus } from '../types'
 
 const HEALTH_CHECK_INTERVAL_MS = 5 * 60 * 1000
@@ -13,6 +14,7 @@ function defaultConfig(): AiConfig {
 }
 
 export function useAiConnection() {
+  const { t } = useI18n()
   const [config, setConfig] = useState<AiConfig>(defaultConfig)
   const [status, setStatus] = useState<ConnectionStatus>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -60,13 +62,13 @@ export function useAiConnection() {
         new URL(endpoint)
       } catch {
         setStatus('error')
-        setError('La URL del endpoint no es válida.')
+        setError(t('ai.errorInvalidEndpoint'))
         return
       }
     }
     if (providerMeta.requiresApiKey && !current.apiKey.trim()) {
       setStatus('error')
-      setError(`${providerMeta.apiKeyLabel} es obligatoria.`)
+      setError(`${providerMeta.apiKeyLabel}${t('ai.errorFieldRequiredSuffix')}`)
       return
     }
 
@@ -92,9 +94,9 @@ export function useAiConnection() {
     } catch (err) {
       if (connectSeq.current !== seq) return
       setStatus('error')
-      setError((err as Error).message || 'No se pudo conectar con el proveedor.')
+      setError((err as Error).message || t('ai.errorConnectFailed'))
     }
-  }, [config])
+  }, [config, t])
 
   const disconnect = useCallback(() => {
     connectSeq.current += 1
@@ -116,12 +118,12 @@ export function useAiConnection() {
         } catch (err) {
           if (connectSeq.current !== seq) return
           setStatus('error')
-          setError(`Conexión perdida con el proveedor: ${(err as Error).message}`)
+          setError(`${t('ai.errorConnectionLostPrefix')}${(err as Error).message}`)
         }
       })()
     }, HEALTH_CHECK_INTERVAL_MS)
     return () => window.clearInterval(id)
-  }, [status])
+  }, [status, t])
 
   const isConnected = status === 'connected'
 

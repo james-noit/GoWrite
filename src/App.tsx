@@ -1,11 +1,11 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import './App.css'
 import { ContextMenu } from './components/Editor/ContextMenu'
 import { Editor } from './components/Editor/Editor'
 import { Toolbar } from './components/Editor/Toolbar'
 import { useGoWriteEditor } from './components/Editor/useGoWriteEditor'
-import { AiPanel } from './components/Header/AiPanel'
 import { Header } from './components/Header/Header'
+import { SettingsModal, type SettingsTab } from './components/Settings/SettingsModal'
 import { SummaryModal } from './components/SummaryModal'
 import { useAiConnection } from './hooks/useAiConnection'
 import { useAiTools } from './hooks/useAiTools'
@@ -21,10 +21,10 @@ import type { SummaryRequest } from './components/SummaryModal'
 import type { FormatId } from './types'
 
 export default function App() {
-  const [aiPanelOpen, setAiPanelOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('general')
   const [summaryRequest, setSummaryRequest] = useState<SummaryRequest | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
-  const aiButtonRef = useRef<HTMLButtonElement>(null)
 
   const { t } = useI18n()
   const { theme, toggleTheme } = useTheme()
@@ -68,8 +68,13 @@ export default function App() {
   ;(window as unknown as { __gwEditor?: unknown }).__gwEditor = editor
   ;(window as unknown as { __gwAi?: unknown }).__gwAi = ai
 
+  const openSettings = useCallback((tab: SettingsTab) => {
+    setSettingsTab(tab)
+    setSettingsOpen(true)
+  }, [])
+
   const openSummary = useCallback((text: string, titleKey: TranslationKey) => {
-    setAiPanelOpen(false)
+    setSettingsOpen(false)
     setSummaryRequest({ text, titleKey })
   }, [])
 
@@ -80,8 +85,7 @@ export default function App() {
         onRename={docs.rename}
         onImport={handleImportFile}
         onExport={handleExport}
-        theme={theme}
-        onToggleTheme={toggleTheme}
+        onOpenSettings={() => openSettings('general')}
         docs={docs}
       />
 
@@ -89,25 +93,23 @@ export default function App() {
         editor={editor}
         ai={ai}
         autocompleteEnabled={tools.config.autocomplete.enabled}
-        aiPanelOpen={aiPanelOpen}
-        onToggleAiPanel={() => setAiPanelOpen((v) => !v)}
-        aiButtonRef={aiButtonRef}
+        onOpenAiSettings={() => openSettings('ai')}
       />
 
-      <AiPanel
-        open={aiPanelOpen}
-        onClose={() => setAiPanelOpen(false)}
-        editor={editor}
+      <SettingsModal
+        open={settingsOpen}
+        initialTab={settingsTab}
+        onClose={() => setSettingsOpen(false)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        docs={docs}
         ai={ai}
         tools={tools}
-        onOpenSummary={openSummary}
-        onAiInsertion={lastAiEdit.record}
-        anchorRef={aiButtonRef}
       />
 
       <SummaryModal request={summaryRequest} onClose={() => setSummaryRequest(null)} ai={ai} />
 
-      <ContextMenu editor={editor} ai={ai} onOpenSummary={openSummary} onAiInsertion={lastAiEdit.record} />
+      <ContextMenu editor={editor} ai={ai} tools={tools} onOpenSummary={openSummary} onAiInsertion={lastAiEdit.record} />
 
       <main className="app-main" ref={containerRef}>
         {importError && (

@@ -1,7 +1,8 @@
 import type { Editor } from '@tiptap/core'
 import type { TranslationKey } from '../../lib/i18n/translations'
-import { ImageIcon } from '../icons'
+import { BrushIcon, ImageIcon } from '../icons'
 import { readImageAsDataUrl } from './image'
+import { formatPainter } from './formatPainter'
 
 export type TFunction = (key: TranslationKey) => string
 
@@ -30,6 +31,24 @@ export const formatGroups: ToolbarGroup[] = [
       { label: 'I', titleKey: 'toolbar.italic', isActive: (e) => e.isActive('italic'), run: (e) => e.chain().focus().toggleItalic().run() },
       { label: 'U', titleKey: 'toolbar.underline', isActive: (e) => e.isActive('underline'), run: (e) => e.chain().focus().toggleUnderline().run() },
       { label: 'S', titleKey: 'toolbar.strike', isActive: (e) => e.isActive('strike'), run: (e) => e.chain().focus().toggleStrike().run() },
+      {
+        icon: BrushIcon,
+        titleKey: 'toolbar.copyPasteFormat',
+        isActive: () => formatPainter.isActive(),
+        isDisabled: (e) => {
+          if (formatPainter.isActive()) return false
+          return e.state.selection.from === e.state.selection.to
+        },
+        run: (e) => {
+          if (formatPainter.isActive()) {
+            formatPainter.clear()
+            return
+          }
+          if (e.state.selection.from !== e.state.selection.to) {
+            formatPainter.copyFormat(e)
+          }
+        },
+      },
     ],
   },
   {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { UseDocuments } from '../../hooks/useDocuments'
 import { useI18n } from '../../hooks/useI18n'
-import type { FormatId, Theme } from '../../types'
+import type { FormatId } from '../../types'
 import { FileMenu } from './FileMenu'
 
 interface HeaderProps {
@@ -9,8 +9,7 @@ interface HeaderProps {
   onRename: (filename: string) => void
   onImport: (file: File) => void
   onExport: (formatId: FormatId) => void
-  theme: Theme
-  onToggleTheme: () => void
+  onOpenSettings: () => void
   docs: UseDocuments
 }
 
@@ -19,8 +18,7 @@ export function Header({
   onRename,
   onImport,
   onExport,
-  theme,
-  onToggleTheme,
+  onOpenSettings,
   docs,
 }: HeaderProps) {
   const { t } = useI18n()
@@ -41,7 +39,7 @@ export function Header({
   return (
     <header className="app-header glass-panel">
       <div className="app-header-left">
-        <FileMenu onImport={onImport} onExport={onExport} theme={theme} onToggleTheme={onToggleTheme} docs={docs} />
+        <FileMenu onImport={onImport} onExport={onExport} onOpenSettings={onOpenSettings} docs={docs} />
         {isEditingTitle ? (
           <input
             className="app-filename-input"
