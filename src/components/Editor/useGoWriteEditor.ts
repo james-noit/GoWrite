@@ -40,6 +40,12 @@ export function useGoWriteEditor(onUpdate: () => void, placeholder: string) {
       Image,
       GhostSuggestion,
     ],
+    editorProps: {
+      // ProseMirror's default clipboard text serializer joins blocks with "\n\n", which
+      // inserts a blank line between every paragraph when pasted as plain text elsewhere —
+      // even when the user never typed one. Use a single separator instead.
+      clipboardTextSerializer: (slice) => slice.content.textBetween(0, slice.content.size, '\n'),
+    },
     autofocus: 'end',
     onUpdate,
   })
