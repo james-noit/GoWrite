@@ -1,5 +1,15 @@
 import type { Editor as TiptapEditor, JSONContent } from '@tiptap/core'
 import JSZip from 'jszip'
+import { collectImageSizes, decodeDataUrl, extensionForMime } from './imageUtils'
+
+const PX_TO_CM = 2.54 / 96
+
+interface OdtImageEntry {
+  fileName: string
+  mime: string
+  widthCm: number
+  heightCm: number
+}
 
 const NS = {
   office: 'urn:oasis:names:tc:opendocument:xmlns:office:1.0',
@@ -274,12 +284,18 @@ const STYLES_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </office:styles>
 </office:document-styles>`
 
-const MANIFEST_XML = `<?xml version="1.0" encoding="UTF-8"?>
+function buildManifestXml(images: OdtImageEntry[]): string {
+  const imageEntries = images
+    .map((img) => `  <manifest:file-entry manifest:full-path="Pictures/${img.fileName}" manifest:media-type="${img.mime}"/>`)
+    .join('\n')
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">
   <manifest:file-entry manifest:full-path="/" manifest:version="1.2" manifest:media-type="application/vnd.oasis.opendocument.text"/>
   <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>
   <manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>
+${imageEntries}
 </manifest:manifest>`
+}
 
 const ODT_ALIGN: Record<string, string> = {
   left: 'start',
@@ -290,12 +306,13 @@ const ODT_ALIGN: Record<string, string> = {
 
 type Mark = { type: string; attrs?: Record<string, unknown> }
 
-function buildContentXml(json: JSONContent): string {
+function buildContentXml(json: JSONContent, images: Map<string, OdtImageEntry>): string {
   const charStyleMap = new Map<string, string>()
   const charStyleDefs: string[] = []
   const paraStyleMap = new Map<string, string>()
   const paraStyleDefs: string[] = []
   let tableCount = 0
+  let frameCount = 0
 
   function styleForAlign(baseStyle: string, textAlign: string | undefined): string {
     if (!textAlign || !ODT_ALIGN[textAlign]) return baseStyle
@@ -440,6 +457,20 @@ function buildContentXml(json: JSONContent): string {
         return listToOdt(node, 'LN')
       case 'table':
         return tableToOdt(node)
+      case 'image': {
+        const src = node.attrs?.src as string | undefined
+        const entry = src ? images.get(src) : undefined
+        if (!entry) return ''
+        frameCount += 1
+        const align = (node.attrs?.align as string | undefined) ?? 'center'
+        const styleName = styleForAlign('Standard', align === 'left' || align === 'right' ? align : undefined)
+        const frame = `<draw:frame draw:name="Image${frameCount}" svg:width="${entry.widthCm.toFixed(3)}cm" svg:height="${entry.heightCm.toFixed(3)}cm" text:anchor-type="as-char"><draw:image xlink:href="Pictures/${entry.fileName}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame>`
+        const caption = node.attrs?.caption as string | undefined
+        const captionXml = caption
+          ? `<text:p text:style-name="Standard">${escapeXml(caption)}</text:p>`
+          : ''
+        return `<text:p text:style-name="${styleName}">${frame}</text:p>${captionXml}`
+      }
       case 'codeBlock': {
         const text = (node.content ?? []).map((t) => t.text ?? '').join('')
         return text
@@ -474,11 +505,49 @@ export async function importOdt(file: File, editor: TiptapEditor): Promise<void>
   editor.commands.setContent(html)
 }
 
+/** Decodes every distinct image src in the doc, resolves its natural size, and stages it for the
+ * zip under Pictures/ — ODT requires images to be embedded package assets, not data URIs. */
+async function prepareOdtImages(json: JSONContent): Promise<{ images: Map<string, OdtImageEntry>; files: Map<string, Uint8Array> }> {
+  const naturalSizes = await collectImageSizes(json)
+  const images = new Map<string, OdtImageEntry>()
+  const files = new Map<string, Uint8Array>()
+
+  const srcs = new Set<string>()
+  const walk = (node: JSONContent) => {
+    if (node.type === 'image' && typeof node.attrs?.src === 'string') srcs.add(node.attrs.src)
+    node.content?.forEach(walk)
+  }
+  walk(json)
+
+  let count = 0
+  for (const src of srcs) {
+    const decoded = decodeDataUrl(src)
+    if (!decoded) continue
+    count += 1
+    const ext = extensionForMime(decoded.mime)
+    const fileName = `img${count}.${ext}`
+    const natural = naturalSizes.get(src) ?? { width: 300, height: 200 }
+    const width = Math.min(natural.width, 600)
+    const height = Math.round(natural.height * (width / natural.width))
+    images.set(src, { fileName, mime: decoded.mime, widthCm: width * PX_TO_CM, heightCm: height * PX_TO_CM })
+    files.set(fileName, decoded.bytes)
+  }
+
+  return { images, files }
+}
+
 export async function exportOdt(editor: TiptapEditor): Promise<Blob> {
+  const json = editor.getJSON()
+  const { images, files } = await prepareOdtImages(json)
+
   const zip = new JSZip()
   zip.file('mimetype', 'application/vnd.oasis.opendocument.text', { compression: 'STORE' })
-  zip.folder('META-INF')?.file('manifest.xml', MANIFEST_XML)
+  zip.folder('META-INF')?.file('manifest.xml', buildManifestXml(Array.from(images.values())))
   zip.file('styles.xml', STYLES_XML)
-  zip.file('content.xml', buildContentXml(editor.getJSON()))
+  zip.file('content.xml', buildContentXml(json, images))
+  const pictures = zip.folder('Pictures')
+  for (const [fileName, bytes] of files) {
+    pictures?.file(fileName, bytes)
+  }
   return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.oasis.opendocument.text' })
 }

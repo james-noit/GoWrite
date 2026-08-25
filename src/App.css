@@ -1265,6 +1265,172 @@
   color: var(--text-0);
 }
 
+/* ---------- Images ---------- */
+
+.gw-image {
+  position: relative;
+  margin: 10px 0;
+  max-width: 100%;
+}
+
+.gw-image--center {
+  display: table;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gw-image--left {
+  float: left;
+  margin: 4px 16px 8px 0;
+  max-width: 60%;
+}
+
+.gw-image--right {
+  float: right;
+  margin: 4px 0 8px 16px;
+  max-width: 60%;
+}
+
+.gw-image.is-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+.gw-image-body {
+  position: relative;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.gw-image-body img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.gw-image--bordered .gw-image-body img {
+  border: 3px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.gw-image-resize-handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface-strong);
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.gw-image.is-selected .gw-image-resize-handle,
+.gw-image-body:hover .gw-image-resize-handle {
+  opacity: 1;
+}
+
+.gw-image-toolbar {
+  position: absolute;
+  top: -46px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px;
+  border-radius: var(--radius-md);
+  background: var(--surface-menu);
+  backdrop-filter: blur(var(--blur-menu)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-menu)) saturate(180%);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+  animation: dropdown-in var(--dur-fast) var(--ease);
+}
+
+/* Small pointer connecting the toolbar to the image it's editing, so its ownership reads at
+   a glance instead of floating ambiguously above the figure. */
+.gw-image-toolbar::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 9px;
+  height: 9px;
+  background: var(--surface-menu);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.gw-image-toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.gw-image-toolbar button:hover {
+  background: var(--border);
+  color: var(--text-0);
+}
+
+.gw-image-toolbar button.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.gw-image-toolbar button.gw-image-toolbar-danger:hover {
+  color: var(--danger, #e5484d);
+  background: color-mix(in srgb, var(--danger, #e5484d) 15%, transparent);
+}
+
+.gw-image-toolbar-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 3px;
+  flex-shrink: 0;
+}
+
+.gw-image-caption {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-style: italic;
+  text-align: center;
+  padding: 2px 4px;
+}
+
+.gw-image-caption::placeholder {
+  color: var(--text-2);
+  opacity: 0.55;
+  font-style: italic;
+}
+
+.gw-image-caption:focus {
+  outline: none;
+  color: var(--text-0);
+}
+
 /* ---------- Tables ---------- */
 
 .editor-content .ProseMirror .tableWrapper {
@@ -1351,6 +1517,96 @@
   font-size: 2rem;
   display: block;
   margin-bottom: 6px;
+}
+
+/* ---------- Document loading overlay ---------- */
+
+.doc-loader-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+  backdrop-filter: blur(3px);
+  animation: fade-in var(--dur-fast) var(--ease);
+}
+
+.doc-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.doc-loader-page {
+  position: relative;
+  width: 220px;
+  height: 120px;
+  padding: 4px 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.doc-loader-line {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-2) 22%, transparent) 25%,
+    color-mix(in srgb, var(--accent) 45%, transparent) 50%,
+    color-mix(in srgb, var(--text-2) 22%, transparent) 75%
+  );
+  background-size: 240% 100%;
+  animation: doc-loader-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes doc-loader-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -40% 0; }
+}
+
+.doc-loader-glass {
+  position: absolute;
+  top: 4%;
+  left: 2%;
+  color: var(--accent);
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--accent) 40%, transparent));
+  animation: doc-loader-scan 5s ease-in-out infinite, doc-loader-wobble 0.9s ease-in-out infinite;
+  transform-origin: 30% 30%;
+}
+
+@keyframes doc-loader-scan {
+  0%   { top: 2%;  left: 0%; }
+  8%   { top: 2%;  left: 82%; }
+  12%  { top: 2%;  left: 0%; }
+  20%  { top: 26%; left: 0%; }
+  28%  { top: 26%; left: 58%; }
+  32%  { top: 26%; left: 0%; }
+  40%  { top: 50%; left: 0%; }
+  48%  { top: 50%; left: 88%; }
+  52%  { top: 50%; left: 0%; }
+  60%  { top: 74%; left: 0%; }
+  66%  { top: 74%; left: 34%; }
+  70%  { top: 74%; left: 0%; }
+  78%  { top: 98%; left: 0%; }
+  86%  { top: 98%; left: 70%; }
+  90%  { top: 98%; left: 0%; }
+  100% { top: 2%;  left: 0%; }
+}
+
+@keyframes doc-loader-wobble {
+  0%, 100% { transform: rotate(-6deg) scale(1); }
+  50% { transform: rotate(6deg) scale(1.08); }
+}
+
+.doc-loader-text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-2);
+  text-align: center;
 }
 
 /* ---------- AI panel ---------- */
@@ -1458,6 +1714,15 @@
   font-size: 0.8rem;
   color: var(--danger);
   margin: 2px 0 0;
+}
+
+.context-menu-notice {
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-left: 2px solid var(--danger);
+  color: var(--text-1);
+  margin: 0 0 2px;
 }
 
 .connect-btn {

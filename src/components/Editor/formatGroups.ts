@@ -1,11 +1,14 @@
 import type { Editor } from '@tiptap/core'
 import type { TranslationKey } from '../../lib/i18n/translations'
+import { ImageIcon } from '../icons'
+import { readImageAsDataUrl } from './image'
 
 export type TFunction = (key: TranslationKey) => string
 
 export interface ToolbarButton {
   label?: string
   labelKey?: TranslationKey
+  icon?: () => React.JSX.Element
   titleKey: TranslationKey
   isActive?: (editor: Editor) => boolean
   isDisabled?: (editor: Editor) => boolean
@@ -60,6 +63,23 @@ export const formatGroups: ToolbarGroup[] = [
           }
           const url = window.prompt(t('toolbar.linkPrompt'))
           if (url) e.chain().focus().setLink({ href: url }).run()
+        },
+      },
+      {
+        icon: ImageIcon,
+        titleKey: 'toolbar.image',
+        run: (e) => {
+          const input = document.createElement('input')
+          input.type = 'file'
+          input.accept = 'image/*'
+          input.onchange = () => {
+            const file = input.files?.[0]
+            if (!file) return
+            void readImageAsDataUrl(file).then((src) => {
+              e.chain().focus().setImage({ src, alt: file.name }).run()
+            })
+          }
+          input.click()
         },
       },
     ],

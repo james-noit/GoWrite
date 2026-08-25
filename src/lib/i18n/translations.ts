@@ -47,6 +47,7 @@ export const translations = {
     'toolbar.codeBlock': 'Código',
     'toolbar.link': 'Enlace',
     'toolbar.linkPrompt': 'URL del enlace',
+    'toolbar.image': 'Insertar imagen',
     'toolbar.alignLeft': 'Alinear a la izquierda',
     'toolbar.alignCenter': 'Centrar',
     'toolbar.alignRight': 'Alinear a la derecha',
@@ -86,6 +87,19 @@ export const translations = {
     'contextMenu.giveFormatOptionParagraphs': 'Párrafos y espaciado',
     'contextMenu.giveFormatOptionPunctuation': 'Mayúsculas y puntuación',
     'contextMenu.giveFormatOptionStructure': 'Títulos y listas',
+    'contextMenu.aiImage': 'Insertar imagen con IA',
+    'contextMenu.aiImagePlaceholder': 'Describe la imagen que quieres crear (ej: un zorro leyendo un libro bajo un árbol)',
+    'contextMenu.aiImageGenerate': '🎨 Generar imagen',
+    'contextMenu.aiImageUnsupported':
+      'Tu proveedor de IA actual no ofrece generación de imágenes en GoWrite.',
+    'contextMenu.aiDescribe': 'Describir imagen con IA',
+    'contextMenu.aiDescribePlaceholder': 'Instrucción para describir la imagen',
+    'contextMenu.aiDescribeDefaultPrompt':
+      'Describe esta imagen con el detalle suficiente para poder usarla como texto alternativo o leyenda.',
+    'contextMenu.aiDescribeGenerate': '📝 Describir',
+    'contextMenu.aiDescribeEditPrompt': 'Editar instrucción',
+    'contextMenu.aiDescribeUnsupported':
+      'Tu proveedor de IA actual no ofrece descripción de imágenes en GoWrite.',
 
     'editor.placeholder': 'Empieza a escribir o arrastra un archivo (.md, .docx, .odt, .txt)…',
     'editor.dropHint': 'Suelta el archivo para importarlo',
@@ -94,6 +108,20 @@ export const translations = {
     'editor.chars': 'caracteres',
     'editor.char': 'carácter',
     'editor.undoAi': '↩ Deshacer última generación de IA',
+
+    'image.alignLeft': 'Alinear imagen a la izquierda',
+    'image.alignCenter': 'Centrar imagen',
+    'image.alignRight': 'Alinear imagen a la derecha',
+    'image.border': 'Borde',
+    'image.remove': 'Eliminar imagen',
+    'image.captionPlaceholder': 'Añadir leyenda…',
+
+    'docLoader.ariaLabel': 'Cargando documento, por favor espera',
+    'docLoader.phrase1': 'Descifrando párrafos…',
+    'docLoader.phrase2': 'Contando las palabras…',
+    'docLoader.phrase3': 'Enderezando los márgenes…',
+    'docLoader.phrase4': 'Buscando la primera línea…',
+    'docLoader.phrase5': 'Sacudiendo el polvo de las páginas…',
 
     'ai.buttonLabel': 'Herramientas IA',
     'ai.title': 'Asistente de IA',
@@ -195,6 +223,7 @@ export const translations = {
     'toolbar.codeBlock': 'Code',
     'toolbar.link': 'Link',
     'toolbar.linkPrompt': 'Link URL',
+    'toolbar.image': 'Insert image',
     'toolbar.alignLeft': 'Align left',
     'toolbar.alignCenter': 'Align center',
     'toolbar.alignRight': 'Align right',
@@ -234,6 +263,18 @@ export const translations = {
     'contextMenu.giveFormatOptionParagraphs': 'Paragraphs & spacing',
     'contextMenu.giveFormatOptionPunctuation': 'Capitalization & punctuation',
     'contextMenu.giveFormatOptionStructure': 'Headings & lists',
+    'contextMenu.aiImage': 'Insert AI image',
+    'contextMenu.aiImagePlaceholder': 'Describe the image you want to create (e.g.: a fox reading a book under a tree)',
+    'contextMenu.aiImageGenerate': '🎨 Generate image',
+    'contextMenu.aiImageUnsupported':
+      "Your current AI provider doesn't offer image generation in GoWrite.",
+    'contextMenu.aiDescribe': 'Describe image with AI',
+    'contextMenu.aiDescribePlaceholder': 'Instruction for describing the image',
+    'contextMenu.aiDescribeDefaultPrompt': 'Describe this image in enough detail to use as alt text or a caption.',
+    'contextMenu.aiDescribeGenerate': '📝 Describe',
+    'contextMenu.aiDescribeEditPrompt': 'Edit prompt',
+    'contextMenu.aiDescribeUnsupported':
+      "Your current AI provider doesn't offer image description in GoWrite.",
 
     'editor.placeholder': 'Start typing or drag a file here (.md, .docx, .odt, .txt)…',
     'editor.dropHint': 'Drop the file to import it',
@@ -242,6 +283,20 @@ export const translations = {
     'editor.chars': 'characters',
     'editor.char': 'character',
     'editor.undoAi': '↩ Undo last AI generation',
+
+    'image.alignLeft': 'Align image left',
+    'image.alignCenter': 'Center image',
+    'image.alignRight': 'Align image right',
+    'image.border': 'Border',
+    'image.remove': 'Remove image',
+    'image.captionPlaceholder': 'Add a caption…',
+
+    'docLoader.ariaLabel': 'Loading document, please wait',
+    'docLoader.phrase1': 'Deciphering paragraphs…',
+    'docLoader.phrase2': 'Counting the words…',
+    'docLoader.phrase3': 'Straightening the margins…',
+    'docLoader.phrase4': 'Looking for the first line…',
+    'docLoader.phrase5': 'Dusting off the pages…',
 
     'ai.buttonLabel': 'AI Tools',
     'ai.title': 'AI Assistant',

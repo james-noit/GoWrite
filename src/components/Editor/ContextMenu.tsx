@@ -4,8 +4,10 @@ import type { UseAiConnection } from '../../hooks/useAiConnection'
 import { useI18n } from '../../hooks/useI18n'
 import type { TranslationKey } from '../../lib/i18n/translations'
 import { continuationMessages, documentText, editMessages, formatMessages, generate } from '../../lib/ai/actions'
+import { describeImage, supportsImageDescription } from '../../lib/ai/describeImage'
+import { generateImage, supportsImageGeneration } from '../../lib/ai/imageGen'
 import { textToHtml } from '../../lib/text'
-import { AutoGenerateIcon, GiveFormatIcon, SummarizeIcon } from '../icons'
+import { AiImageIcon, AutoGenerateIcon, DescribeImageIcon, GiveFormatIcon, SummarizeIcon } from '../icons'
 import { FunnyLoader } from '../FunnyLoader'
 import { formatGroups } from './formatGroups'
 import { insertTableAction, tableEditActions } from './tableActions'
@@ -17,7 +19,7 @@ interface ContextMenuProps {
   onAiInsertion: (from: number, to: number) => void
 }
 
-type Tool = 'edit' | 'generate' | 'format'
+type Tool = 'edit' | 'generate' | 'format' | 'image' | 'describe'
 type Stage = 'menu' | 'options' | 'generating' | 'review'
 
 const MENU_WIDTH = 260
@@ -33,6 +35,7 @@ export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: Contex
   const [stage, setStage] = useState<Stage>('menu')
   const [range, setRange] = useState<{ from: number; to: number } | null>(null)
   const [cursorPos, setCursorPos] = useState(0)
+  const [imageSrc, setImageSrc] = useState<string | null>(null)
 
   const [instruction, setInstruction] = useState('')
   const [genMin, setGenMin] = useState(50)
@@ -41,6 +44,9 @@ export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: Contex
   const [fmtParagraphs, setFmtParagraphs] = useState(true)
   const [fmtPunctuation, setFmtPunctuation] = useState(true)
   const [fmtStructure, setFmtStructure] = useState(true)
+  const [imagePrompt, setImagePrompt] = useState('')
+  const [describePrompt, setDescribePrompt] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const [draft, setDraft] = useState('')
   const [insertRange, setInsertRange] = useState<{ from: number; to: number } | null>(null)
@@ -56,7 +62,11 @@ export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: Contex
     setTool(null)
     setStage('menu')
     setRange(null)
+    setImageSrc(null)
     setInstruction('')
+    setImagePrompt('')
+    setDescribePrompt('')
+    setCopied(false)
     setDraft('')
     setInsertRange(null)
     setInsertAt(null)
@@ -71,9 +81,15 @@ export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: Contex
       const { from, to, empty, head } = editor.state.selection
       setRange(empty ? null : { from, to })
       setCursorPos(head)
+      const target = e.target as HTMLElement | null
+      const imgEl = target?.closest('.gw-image')?.querySelector('img') as HTMLImageElement | null
+      setImageSrc(imgEl?.src ?? null)
       setTool(null)
       setStage('menu')
       setInstruction('')
+      setImagePrompt('')
+      setDescribePrompt('')
+      setCopied(false)
       setDraft('')
       setInsertRange(null)
       setInsertAt(null)
@@ -160,6 +176,76 @@ export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: Contex
     }
   }
 
+  const runImageTool = async () => {
+    if (!editor) return
+    const prompt = imagePrompt.trim()
+    if (!prompt) return
+    if (!supportsImageGeneration(ai.config.provider)) {
+      setError(t('contextMenu.aiImageUnsupported'))
+      return
+    }
+
+    const insertPos = range ? range.to : cursorPos
+    const controller = new AbortController()
+    controllerRef.current = controller
+    setStage('generating')
+    setError(null)
+    try {
+      const src = await generateImage(ai.config, prompt, controller.signal)
+      const sizeBefore = editor.state.doc.content.size
+      editor
+        .chain()
+        .focus()
+        .setTextSelection(insertPos)
+        .insertContent({ type: 'image', attrs: { src, alt: prompt } })
+        .run()
+      const sizeAfter = editor.state.doc.content.size
+      onAiInsertion(insertPos, insertPos + (sizeAfter - sizeBefore))
+      close()
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        setError((err as Error).message || t('ai.status.error'))
+        setStage('options')
+      }
+    }
+  }
+
+  const runDescribeTool = async () => {
+    if (!imageSrc) return
+    const prompt = describePrompt.trim()
+    if (!prompt) return
+    if (!supportsImageDescription(ai.config.provider)) {
+      setError(t('contextMenu.aiDescribeUnsupported'))
+      return
+    }
+
+    const controller = new AbortController()
+    controllerRef.current = controller
+    setStage('generating')
+    setError(null)
+    try {
+      const result = await describeImage(ai.config, imageSrc, prompt, controller.signal)
+      setDraft(result.trim())
+      setCopied(false)
+      setStage('review')
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        setError((err as Error).message || t('ai.status.error'))
+        setStage('options')
+      }
+    }
+  }
+
+  const copyDescription = () => {
+    void navigator.clipboard
+      .writeText(draft)
+      .then(() => {
+        setCopied(true)
+        window.setTimeout(() => setCopied(false), 1500)
+      })
+      .catch(() => {})
+  }
+
   const acceptDraft = () => {
     if (!editor || !draft.trim()) return
     const sizeBefore = editor.state.doc.content.size
@@ -205,7 +291,7 @@ export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: Contex
                   close()
                 }}
               >
-                {btn.labelKey ? t(btn.labelKey) : btn.label}
+                {btn.icon ? <btn.icon /> : btn.labelKey ? t(btn.labelKey) : btn.label}
               </button>
             ))}
           </div>
@@ -346,6 +432,39 @@ export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: Contex
               <GiveFormatIcon />
               {t('contextMenu.giveFormat')}
             </button>
+
+            <button
+              type="button"
+              role="menuitem"
+              className="context-menu-item"
+              disabled={aiDisabled}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setTool('image')
+                setStage('options')
+              }}
+            >
+              <AiImageIcon />
+              {t('contextMenu.aiImage')}
+            </button>
+
+            {imageSrc && (
+              <button
+                type="button"
+                role="menuitem"
+                className="context-menu-item"
+                disabled={aiDisabled}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setTool('describe')
+                  setDescribePrompt(t('contextMenu.aiDescribeDefaultPrompt'))
+                  setStage('options')
+                }}
+              >
+                <DescribeImageIcon />
+                {t('contextMenu.aiDescribe')}
+              </button>
+            )}
           </div>
         </>
       )}
@@ -481,6 +600,74 @@ export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: Contex
         </div>
       )}
 
+      {stage === 'options' && tool === 'image' && (
+        <div className="context-menu-prompt">
+          {!supportsImageGeneration(ai.config.provider) && (
+            <p className="field-hint context-menu-notice">{t('contextMenu.aiImageUnsupported')}</p>
+          )}
+          {error && (
+            <p className="field-error" role="alert">
+              {error}
+            </p>
+          )}
+          <textarea
+            className="field-input gen-draft scroll-thin"
+            autoFocus
+            placeholder={t('contextMenu.aiImagePlaceholder')}
+            value={imagePrompt}
+            disabled={!supportsImageGeneration(ai.config.provider)}
+            onChange={(e) => setImagePrompt(e.target.value)}
+          />
+          <div className="action-row">
+            <button type="button" className="connect-btn connect-btn--ghost" onClick={() => setStage('menu')}>
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              className="connect-btn"
+              disabled={!imagePrompt.trim() || !supportsImageGeneration(ai.config.provider)}
+              onClick={() => void runImageTool()}
+            >
+              {t('contextMenu.aiImageGenerate')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {stage === 'options' && tool === 'describe' && (
+        <div className="context-menu-prompt">
+          {!supportsImageDescription(ai.config.provider) && (
+            <p className="field-hint context-menu-notice">{t('contextMenu.aiDescribeUnsupported')}</p>
+          )}
+          {error && (
+            <p className="field-error" role="alert">
+              {error}
+            </p>
+          )}
+          <textarea
+            className="field-input gen-draft scroll-thin"
+            autoFocus
+            placeholder={t('contextMenu.aiDescribePlaceholder')}
+            value={describePrompt}
+            disabled={!supportsImageDescription(ai.config.provider)}
+            onChange={(e) => setDescribePrompt(e.target.value)}
+          />
+          <div className="action-row">
+            <button type="button" className="connect-btn connect-btn--ghost" onClick={() => setStage('menu')}>
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              className="connect-btn"
+              disabled={!describePrompt.trim() || !supportsImageDescription(ai.config.provider)}
+              onClick={() => void runDescribeTool()}
+            >
+              {t('contextMenu.aiDescribeGenerate')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {stage === 'generating' && (
         <div className="context-menu-prompt">
           <FunnyLoader />
@@ -494,7 +681,29 @@ export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: Contex
         </div>
       )}
 
-      {stage === 'review' && (
+      {stage === 'review' && tool === 'describe' && (
+        <div className="context-menu-prompt">
+          {error && (
+            <p className="field-error" role="alert">
+              {error}
+            </p>
+          )}
+          <textarea className="field-input gen-draft scroll-thin" value={draft} readOnly />
+          <div className="action-row">
+            <button type="button" className="connect-btn connect-btn--ghost" onClick={() => setStage('options')}>
+              {t('contextMenu.aiDescribeEditPrompt')}
+            </button>
+            <button type="button" className="connect-btn connect-btn--connected" onClick={copyDescription}>
+              {copied ? t('summary.copied') : t('summary.copy')}
+            </button>
+            <button type="button" className="connect-btn connect-btn--danger" onClick={close}>
+              {t('common.close')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {stage === 'review' && tool !== 'describe' && (
         <div className="context-menu-prompt">
           <textarea
             className="field-input gen-draft scroll-thin"

@@ -15,3 +15,7 @@ export function customChatCompletionsUrl(base: string): string {
 export function customModelsUrl(base: string): string {
   return `${origin(base)}/v1/models`
 }
+
+export function customImagesUrl(base: string): string {
+  return `${origin(base)}/v1/images/generations`
+}

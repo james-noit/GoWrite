@@ -101,6 +101,95 @@ export function DeleteRowIcon() {
   )
 }
 
+export function ImageIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="M21 15l-5-5-9 9" />
+    </svg>
+  )
+}
+
+export function ImageAlignLeftIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="4" width="8" height="8" rx="1" />
+      <line x1="13" y1="6" x2="22" y2="6" />
+      <line x1="13" y1="10" x2="19" y2="10" />
+      <line x1="2" y1="16" x2="22" y2="16" />
+      <line x1="2" y1="20" x2="22" y2="20" />
+    </svg>
+  )
+}
+
+export function ImageAlignCenterIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="7" y="2" width="10" height="8" rx="1" />
+      <line x1="2" y1="14" x2="22" y2="14" />
+      <line x1="2" y1="18" x2="22" y2="18" />
+      <line x1="6" y1="22" x2="18" y2="22" />
+    </svg>
+  )
+}
+
+export function ImageAlignRightIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="14" y="4" width="8" height="8" rx="1" />
+      <line x1="2" y1="6" x2="11" y2="6" />
+      <line x1="5" y1="10" x2="11" y2="10" />
+      <line x1="2" y1="16" x2="22" y2="16" />
+      <line x1="2" y1="20" x2="22" y2="20" />
+    </svg>
+  )
+}
+
+export function ImageBorderIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="3.5 3" aria-hidden="true">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+    </svg>
+  )
+}
+
+export function TrashIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 7h16" />
+      <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+      <path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  )
+}
+
+export function AiImageIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="5" width="14" height="14" rx="2" />
+      <circle cx="6.5" cy="9.5" r="1.3" />
+      <path d="M16 15l-4-4-6.5 6.5" />
+      <path d="M19 3l0.9 2.1L22 6l-2.1 0.9L19 9l-0.9-2.1L16 6l2.1-0.9z" />
+    </svg>
+  )
+}
+
+export function DescribeImageIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="4" width="11" height="11" rx="1.5" />
+      <circle cx="5.8" cy="7.8" r="1.1" />
+      <path d="M2 12.5l3-3 2.2 2.2 3.3-3.3" />
+      <line x1="16" y1="7" x2="22" y2="7" />
+      <line x1="16" y1="11" x2="22" y2="11" />
+      <line x1="16" y1="15" x2="20" y2="15" />
+    </svg>
+  )
+}
+
 export function GiveFormatIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

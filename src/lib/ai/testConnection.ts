@@ -1,5 +1,6 @@
 import type { AiConfig } from '../../types'
 import { customModelsUrl } from './endpoint'
+import { localServerUnreachableMessage } from './localOrigin'
 import { providerRegistry } from './providers'
 import { extractHttpError } from './stream'
 
@@ -77,7 +78,7 @@ export async function testConnection(config: AiConfig): Promise<string[]> {
       }
       throw new Error(
         config.provider === 'Custom'
-          ? 'No se pudo contactar con el servidor local. Comprueba que está en marcha y que el endpoint es correcto.'
+          ? localServerUnreachableMessage()
           : 'No se pudo contactar con el proveedor. Comprueba tu conexión a internet.',
       )
     }

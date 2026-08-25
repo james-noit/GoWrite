@@ -4,6 +4,7 @@ import {
   Document,
   ExternalHyperlink,
   HeadingLevel,
+  ImageRun,
   LevelFormat,
   Packer,
   Paragraph,
@@ -16,6 +17,9 @@ import {
 } from 'docx'
 import mammoth from 'mammoth'
 import type { Editor as TiptapEditor } from '@tiptap/core'
+import { collectImageSizes, decodeDataUrl, extensionForMime, scaledSize, type ImageSize } from './imageUtils'
+
+const DOCX_IMAGE_TYPES = new Set(['jpg', 'png', 'gif', 'bmp'])
 
 const HEADING_MAP = {
   1: HeadingLevel.HEADING_1,
@@ -105,10 +109,10 @@ function listToParagraphs(node: JSONContent, ordered: boolean, level: number): P
 
 const HEADER_CELL_SHADING = { fill: 'E5E5E5', color: 'auto', type: ShadingType.CLEAR } as const
 
-function tableToDocxTable(node: JSONContent): Table {
+function tableToDocxTable(node: JSONContent, imageSizes: Map<string, ImageSize>): Table {
   const rows = (node.content ?? []).map((rowNode) => {
     const cells = (rowNode.content ?? []).map((cellNode) => {
-      const cellChildren = (cellNode.content ?? []).flatMap((child) => blockToParagraphs(child))
+      const cellChildren = (cellNode.content ?? []).flatMap((child) => blockToParagraphs(child, 0, imageSizes))
       return new TableCell({
         children: cellChildren.length ? cellChildren : [new Paragraph('')],
         shading: cellNode.type === 'tableHeader' ? HEADER_CELL_SHADING : undefined,
@@ -119,11 +123,45 @@ function tableToDocxTable(node: JSONContent): Table {
   return new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } })
 }
 
-function blockToParagraphs(node: JSONContent, indent = 0): (Paragraph | Table)[] {
+const ALIGN_MAP_OR_CENTER: Record<string, (typeof AlignmentType)[keyof typeof AlignmentType]> = {
+  left: AlignmentType.LEFT,
+  center: AlignmentType.CENTER,
+  right: AlignmentType.RIGHT,
+}
+
+function imageToParagraphs(node: JSONContent, imageSizes: Map<string, ImageSize>): Paragraph[] {
+  const src = node.attrs?.src as string | undefined
+  const decoded = src ? decodeDataUrl(src) : null
+  if (!decoded) return []
+  const ext = extensionForMime(decoded.mime)
+  if (!DOCX_IMAGE_TYPES.has(ext)) return []
+
+  const natural = imageSizes.get(src!) ?? { width: 300, height: 200 }
+  const { width, height } = scaledSize(natural, node.attrs?.width as number | undefined | null)
+  const align = ALIGN_MAP_OR_CENTER[(node.attrs?.align as string | undefined) ?? 'center'] ?? AlignmentType.CENTER
+
+  const image = new ImageRun({
+    type: ext as 'jpg' | 'png' | 'gif' | 'bmp',
+    data: decoded.bytes,
+    transformation: { width, height },
+  })
+  const paragraphs = [new Paragraph({ children: [image], alignment: align })]
+  const caption = node.attrs?.caption as string | undefined
+  if (caption) {
+    paragraphs.push(
+      new Paragraph({ children: [new TextRun({ text: caption, italics: true, size: 18 })], alignment: align }),
+    )
+  }
+  return paragraphs
+}
+
+function blockToParagraphs(node: JSONContent, indent = 0, imageSizes: Map<string, ImageSize> = new Map()): (Paragraph | Table)[] {
   const indentOpt = indent > 0 ? { left: indent * INDENT_STEP } : undefined
   switch (node.type) {
     case 'table':
-      return [tableToDocxTable(node)]
+      return [tableToDocxTable(node, imageSizes)]
+    case 'image':
+      return imageToParagraphs(node, imageSizes)
     case 'paragraph':
       return [new Paragraph({ children: inlineToRuns(node.content), indent: indentOpt, alignment: alignmentOf(node) })]
     case 'heading': {
@@ -137,7 +175,7 @@ function blockToParagraphs(node: JSONContent, indent = 0): (Paragraph | Table)[]
       ]
     }
     case 'blockquote':
-      return (node.content ?? []).flatMap((child) => blockToParagraphs(child, indent + 1))
+      return (node.content ?? []).flatMap((child) => blockToParagraphs(child, indent + 1, imageSizes))
     case 'bulletList':
       return listToParagraphs(node, false, indent)
     case 'orderedList':
@@ -158,7 +196,7 @@ function blockToParagraphs(node: JSONContent, indent = 0): (Paragraph | Table)[]
     case 'horizontalRule':
       return [new Paragraph({ children: [new TextRun({ text: '───────────' })] })]
     default:
-      return node.content ? node.content.flatMap((child) => blockToParagraphs(child, indent)) : []
+      return node.content ? node.content.flatMap((child) => blockToParagraphs(child, indent, imageSizes)) : []
   }
 }
 
@@ -170,7 +208,8 @@ export async function importDocx(file: File, editor: TiptapEditor): Promise<void
 
 export async function exportDocx(editor: TiptapEditor): Promise<Blob> {
   const json = editor.getJSON()
-  const children = (json.content ?? []).flatMap((node) => blockToParagraphs(node))
+  const imageSizes = await collectImageSizes(json)
+  const children = (json.content ?? []).flatMap((node) => blockToParagraphs(node, 0, imageSizes))
 
   const doc = new Document({
     numbering: {

@@ -36,15 +36,20 @@ export default function App() {
 
   useAutocomplete(editor, ai, tools.config.autocomplete, lastAiEdit.record)
 
+  const [importing, setImporting] = useState(false)
+
   const handleImportFile = useCallback(
     async (file: File) => {
       if (!editor) return
+      setImporting(true)
       try {
         await importFile(file, editor)
         docs.importAsCurrent(file.name)
         setImportError(null)
       } catch (err) {
         setImportError((err as Error).message)
+      } finally {
+        setImporting(false)
       }
     },
     [editor, docs],
@@ -59,6 +64,9 @@ export default function App() {
   )
 
   const { containerRef, isDragOver } = useDragAndDrop(handleImportFile)
+
+  ;(window as unknown as { __gwEditor?: unknown }).__gwEditor = editor
+  ;(window as unknown as { __gwAi?: unknown }).__gwAi = ai
 
   const openSummary = useCallback((text: string, titleKey: TranslationKey) => {
     setAiPanelOpen(false)
@@ -108,7 +116,7 @@ export default function App() {
             <button type="button" onClick={() => setImportError(null)} aria-label={t('app.importErrorDismiss')}>✕</button>
           </div>
         )}
-        <Editor editor={editor} isDragOver={isDragOver} />
+        <Editor editor={editor} isDragOver={isDragOver} isLoading={importing || !docs.ready} />
         {lastAiEdit.hasUndo && (
           <button type="button" className="undo-ai-btn" onClick={lastAiEdit.undo}>
             {t('editor.undoAi')}

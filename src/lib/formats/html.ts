@@ -21,6 +21,11 @@ export const htmlFormat: FormatDefinition = {
       table { border-collapse: collapse; }
       td, th { border: 1px solid #999; padding: 6px 10px; }
       th { background: #f0f0f0; }
+      img { max-width: 100%; height: auto; }
+      img[data-align="left"] { float: left; margin: 4px 16px 8px 0; max-width: 60%; }
+      img[data-align="right"] { float: right; margin: 4px 0 8px 16px; max-width: 60%; }
+      img[data-align="center"] { display: block; margin: 10px auto; }
+      img[data-bordered="true"] { border: 3px solid #999; border-radius: 4px; }
     `
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>${style}</style></head><body>${editor.getHTML()}</body></html>`
     return new Blob([html], { type: 'text/html;charset=utf-8' })

@@ -231,7 +231,7 @@ function GroupButtons({ editor, buttons, t }: { editor: Editor; buttons: Toolbar
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => btn.run(editor, t)}
           >
-            {btn.labelKey ? t(btn.labelKey) : btn.label}
+            {btn.icon ? <btn.icon /> : btn.labelKey ? t(btn.labelKey) : btn.label}
           </button>
         );
       })}

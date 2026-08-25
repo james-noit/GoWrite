@@ -37,3 +37,6 @@ temp/
 # Docs
 docs/specs/
 docs/superpowers/
+
+# Opencode
+opencode.*

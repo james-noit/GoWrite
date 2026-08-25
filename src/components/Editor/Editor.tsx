@@ -2,13 +2,15 @@ import type { Editor as TiptapEditor } from '@tiptap/core'
 import { EditorContent } from '@tiptap/react'
 import { useI18n } from '../../hooks/useI18n'
 import { useWordCount } from '../../hooks/useWordCount'
+import { DocLoader } from '../DocLoader'
 
 interface EditorProps {
   editor: TiptapEditor | null
   isDragOver: boolean
+  isLoading?: boolean
 }
 
-export function Editor({ editor, isDragOver }: EditorProps) {
+export function Editor({ editor, isDragOver, isLoading }: EditorProps) {
   const { t } = useI18n()
   const { words, chars } = useWordCount(editor)
 
@@ -28,6 +30,11 @@ export function Editor({ editor, isDragOver }: EditorProps) {
             <span className="drop-icon">⇩</span>
             <p>{t('editor.dropHint')}</p>
           </div>
+        </div>
+      )}
+      {isLoading && (
+        <div className="doc-loader-overlay">
+          <DocLoader />
         </div>
       )}
     </div>

@@ -14,6 +14,7 @@ import { Markdown } from 'tiptap-markdown'
 import { CodeBlockWithLanguageInput } from './codeBlock'
 import { FontSize } from './fontSize'
 import { GhostSuggestion } from './ghostSuggestion'
+import { Image } from './image'
 
 export function useGoWriteEditor(onUpdate: () => void, placeholder: string) {
   return useEditor({
@@ -36,6 +37,7 @@ export function useGoWriteEditor(onUpdate: () => void, placeholder: string) {
       TableHeader,
       TableCell,
       Markdown.configure({ html: true, transformPastedText: false }),
+      Image,
       GhostSuggestion,
     ],
     autofocus: 'end',

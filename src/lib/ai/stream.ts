@@ -1,5 +1,6 @@
 import type { AiConfig, ChatMessage } from '../../types'
 import { customChatCompletionsUrl } from './endpoint'
+import { localServerUnreachableMessage } from './localOrigin'
 import { providerRegistry } from './providers'
 
 type OnToken = (delta: string) => void
@@ -45,16 +46,25 @@ async function streamOpenAICompatible(
   onToken: OnToken,
   signal: AbortSignal,
   maxTokens: number,
+  isCustomLocal = false,
 ) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    signal,
-    body: JSON.stringify({ model, stream: true, max_tokens: maxTokens, messages }),
-  })
+  let response: Response
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      signal,
+      body: JSON.stringify({ model, stream: true, max_tokens: maxTokens, messages }),
+    })
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') throw err
+    throw new Error(
+      isCustomLocal ? localServerUnreachableMessage() : 'No se pudo contactar con el proveedor. Comprueba tu conexión a internet.',
+    )
+  }
   if (!response.ok) throw new Error(await extractHttpError(response))
 
   await readSse(
@@ -216,6 +226,7 @@ export async function streamChat(
         onToken,
         signal,
         maxTokens,
+        true,
       )
     case 'Anthropic':
       return streamAnthropic(config.apiKey, model, messages, onToken, signal, maxTokens)
