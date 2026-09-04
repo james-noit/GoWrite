@@ -1,10 +1,12 @@
-import type { AiConfig, AiToolsConfig, DocumentSnapshot, Theme } from '../types'
+import type { AiConfig, AiToolsConfig, DocumentSnapshot, EditorPrefsConfig, Theme } from '../types'
 
 const KEYS = {
   theme: 'gowrite:theme',
   aiConfig: 'gowrite:ai-config',
   aiTools: 'gowrite:ai-tools',
   document: 'gowrite:document',
+  editorPrefs: 'gowrite:editor-prefs',
+  coffeeDismissed: 'gowrite:coffee-dismissed',
 } as const
 
 function read<T>(key: string): T | null {
@@ -43,4 +45,14 @@ export const aiToolsStorage = {
 export const documentStorage = {
   get: (): DocumentSnapshot | null => read<DocumentSnapshot>(KEYS.document),
   set: (snapshot: DocumentSnapshot): void => write(KEYS.document, snapshot),
+}
+
+export const editorPrefsStorage = {
+  get: (): Partial<EditorPrefsConfig> | null => read<Partial<EditorPrefsConfig>>(KEYS.editorPrefs),
+  set: (prefs: EditorPrefsConfig): void => write(KEYS.editorPrefs, prefs),
+}
+
+export const coffeeDismissedStorage = {
+  get: (): boolean => read<boolean>(KEYS.coffeeDismissed) === true,
+  set: (dismissed: boolean): void => write(KEYS.coffeeDismissed, dismissed),
 }

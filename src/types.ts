@@ -39,16 +39,14 @@ export interface AutocompleteConfig {
   maxWords: number
 }
 
-export interface ContinueToolConfig {
-  enabled: boolean
-  minWords: number
-  maxWords: number
+export interface AiToolsConfig {
+  autocomplete: AutocompleteConfig
 }
 
-export interface AiToolsConfig {
-  summarize: { enabled: boolean }
-  autocomplete: AutocompleteConfig
-  continueTool: ContinueToolConfig
+export interface EditorPrefsConfig {
+  /** How long a text selection must be held on a touch device before the quick-format popup
+   * appears next to it — the "standoff" before the contextual menu pops up. */
+  quickFormatDelayMs: number
 }
 
 export interface ChatMessage {

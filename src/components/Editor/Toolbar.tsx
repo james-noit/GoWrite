@@ -1,28 +1,21 @@
 import type { Editor } from "@tiptap/core";
-import { useEffect, useReducer, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../../hooks/useI18n";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { FULL_TOOLBAR_TIER_QUERY } from "../../lib/breakpoints";
+import type { TranslationKey } from "../../lib/i18n/translations";
+import { FormatFabIcon } from "../icons";
 import { formatGroups as groups, type TFunction, type ToolbarButton } from "./formatGroups";
 import { formatPainter } from "./formatPainter";
 import { insertTableAction, tableEditActions } from "./tableActions";
 
+// The buttons offered in the selection-triggered quick-format popup on touch devices — the
+// handful of formatting actions someone reaches for immediately after selecting text. Anything
+// less common (headings, lists, alignment, tables, ...) stays behind the full sheet.
+const QUICK_FORMAT_KEYS: TranslationKey[] = ["toolbar.bold", "toolbar.italic", "toolbar.underline", "toolbar.strike"];
+
 type SavedSelection = { from: number; to: number } | null;
-
-// The desktop-style single-row strip only makes sense with a mouse (fine pointer) or on a
-// genuinely wide screen — a touch tablet at 768-1023px still needs the phone's disclosure sheet,
-// since a coarse pointer's larger touch targets would otherwise push a third of the controls off
-// the edge of a single non-wrapping row.
-const FULL_TIER_QUERY = "(min-width: 1024px), (min-width: 768px) and (pointer: fine)";
-
-function useMediaQuery(query: string): boolean {
-  const subscribe = (onChange: () => void) => {
-    const mql = window.matchMedia(query);
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  };
-  const getSnapshot = () => window.matchMedia(query).matches;
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
 
 // The four native inputs below (two <select>, two <input type="color">) can't be guarded with
 // preventDefault — that would stop their pickers from opening — so instead we snapshot the
@@ -252,14 +245,119 @@ function FormatGroups({ editor, getSavedSelection }: FormatGroupsProps) {
   );
 }
 
-interface ToolbarProps {
-  editor: Editor | null;
+interface QuickFormatPopupProps {
+  editor: Editor;
+  delayMs: number;
+  onExpand: () => void;
 }
 
-export function Toolbar({ editor }: ToolbarProps) {
+/** Touch-only selection toolbar: holding a text selection for `delayMs` pops a small floating
+ * bar of the most common formatting actions next to it, so the everyday case (bold a phrase)
+ * doesn't require detouring through the full sheet. A "more" button on it opens that sheet for
+ * everything else. */
+function QuickFormatPopup({ editor, delayMs, onExpand }: QuickFormatPopupProps) {
+  const { t } = useI18n();
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const timerRef = useRef<number | undefined>(undefined);
+  const lastRangeRef = useRef<{ from: number; to: number } | null>(null);
+
+  useEffect(() => {
+    const clearTimer = () => {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = undefined;
+    };
+
+    const showNear = (from: number, to: number) => {
+      const start = editor.view.coordsAtPos(from);
+      const end = editor.view.coordsAtPos(to);
+      setPos({
+        top: Math.min(start.top, end.top),
+        left: (Math.min(start.left, end.left) + Math.max(start.right, end.right)) / 2,
+      });
+    };
+
+    const onSelectionUpdate = () => {
+      const { from, to } = editor.state.selection;
+      const prev = lastRangeRef.current;
+      lastRangeRef.current = { from, to };
+      // A command applied from the popup itself (e.g. toggling bold) re-fires this event without
+      // actually moving the selection — ignore that so the popup doesn't hide right after use.
+      if (prev && prev.from === from && prev.to === to) return;
+
+      clearTimer();
+      setPos(null);
+      if (from === to) return;
+      timerRef.current = window.setTimeout(() => {
+        const sel = editor.state.selection;
+        if (sel.from === sel.to) return;
+        showNear(sel.from, sel.to);
+      }, delayMs);
+    };
+
+    const hide = () => {
+      clearTimer();
+      setPos(null);
+    };
+
+    editor.on("selectionUpdate", onSelectionUpdate);
+    // The anchor coordinates go stale the moment the page scrolls, so just dismiss rather than
+    // try to track the selection's new position.
+    window.addEventListener("scroll", hide, true);
+    return () => {
+      clearTimer();
+      editor.off("selectionUpdate", onSelectionUpdate);
+      window.removeEventListener("scroll", hide, true);
+    };
+  }, [editor, delayMs]);
+
+  if (!pos) return null;
+
+  const fontGroup = groups.find((g) => g.labelKey === "toolbar.group.font");
+  const buttons = fontGroup?.buttons.filter((btn) => QUICK_FORMAT_KEYS.includes(btn.titleKey)) ?? [];
+  const margin = 90;
+  const left = Math.min(Math.max(pos.left, margin), window.innerWidth - margin);
+
+  return createPortal(
+    <div className="quick-format-bar" style={{ top: pos.top, left }} role="toolbar" aria-label={t("toolbar.format")}>
+      {buttons.map((btn) => (
+        <button
+          key={btn.titleKey}
+          type="button"
+          title={t(btn.titleKey)}
+          className={`quick-format-btn${btn.isActive?.(editor) ? " is-active" : ""}`}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => btn.run(editor, t)}
+        >
+          {btn.icon ? <btn.icon /> : btn.labelKey ? t(btn.labelKey) : btn.label}
+        </button>
+      ))}
+      <button
+        type="button"
+        className="quick-format-btn quick-format-more"
+        title={t("toolbar.moreFormatting")}
+        aria-label={t("toolbar.moreFormatting")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => {
+          setPos(null);
+          onExpand();
+        }}
+      >
+        ⋯
+      </button>
+    </div>,
+    document.body,
+  );
+}
+
+interface ToolbarProps {
+  editor: Editor | null;
+  quickFormatDelayMs: number;
+}
+
+export function Toolbar({ editor, quickFormatDelayMs }: ToolbarProps) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
-  const isFullTier = useMediaQuery(FULL_TIER_QUERY);
+  const isFullTier = useMediaQuery(FULL_TOOLBAR_TIER_QUERY);
   const rootRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<SavedSelection>(null);
@@ -320,50 +418,63 @@ export function Toolbar({ editor }: ToolbarProps) {
 
   const getSavedSelection = () => savedSelectionRef.current;
 
-  return (
-    <div className="format-bar glass-panel" ref={rootRef}>
-      <div className="format-bar-top">
-        {isFullTier ? (
+  const sheet = menuOpen
+    ? createPortal(
+        <div className="fmt-sheet" role="group" aria-label={t("toolbar.format")} ref={sheetRef}>
+          <div className="fmt-sheet-grab" aria-hidden="true" />
+          <div className="fmt-sheet-header">
+            <span className="fmt-sheet-title">{t("toolbar.format")}</span>
+            <button
+              type="button"
+              className="icon-btn"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setMenuOpen(false)}
+              aria-label={t("common.close")}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="fmt-sheet-body">
+            <FormatGroups editor={editor} getSavedSelection={getSavedSelection} />
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
+  if (isFullTier) {
+    return (
+      <div className="format-bar glass-panel" ref={rootRef}>
+        <div className="format-bar-top">
           <div className="format-bar-inline">
             <FormatGroups editor={editor} getSavedSelection={getSavedSelection} />
           </div>
-        ) : (
-          <button
-            type="button"
-            className="format-tab"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-expanded={menuOpen}
-            aria-label={t("toolbar.showFormatBar")}
-          >
-            {t("toolbar.format")} {menuOpen ? "▴" : "▾"}
-          </button>
-        )}
+        </div>
       </div>
+    );
+  }
 
-      {!isFullTier &&
-        menuOpen &&
-        createPortal(
-          <div className="fmt-sheet" role="group" aria-label={t("toolbar.format")} ref={sheetRef}>
-            <div className="fmt-sheet-grab" aria-hidden="true" />
-            <div className="fmt-sheet-header">
-              <span className="fmt-sheet-title">{t("toolbar.format")}</span>
-              <button
-                type="button"
-                className="icon-btn"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setMenuOpen(false)}
-                aria-label={t("common.close")}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="fmt-sheet-body">
-              <FormatGroups editor={editor} getSavedSelection={getSavedSelection} />
-            </div>
-          </div>,
-          document.body,
-        )}
-    </div>
+  // On touch, there's no permanent toolbar strip at all — it would either sit mostly idle
+  // (formatting is occasional, not constant) or cost vertical space the document needs more.
+  // Instead: a selection triggers the quick popup automatically, and a corner FAB is always
+  // reachable for everything else, without claiming any space until it's actually used.
+  return (
+    <>
+      <QuickFormatPopup editor={editor} delayMs={quickFormatDelayMs} onExpand={() => setMenuOpen(true)} />
+      {createPortal(
+        <button
+          type="button"
+          className="format-fab"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-expanded={menuOpen}
+          aria-label={t("toolbar.showFormatBar")}
+        >
+          <FormatFabIcon />
+        </button>,
+        document.body,
+      )}
+      {sheet}
+    </>
   );
 }

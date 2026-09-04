@@ -5,6 +5,7 @@ import { Editor } from './components/Editor/Editor'
 import { Toolbar } from './components/Editor/Toolbar'
 import { useGoWriteEditor } from './components/Editor/useGoWriteEditor'
 import { Header } from './components/Header/Header'
+import { MobileSupportButton } from './components/Header/MobileSupportButton'
 import { SettingsModal, type SettingsTab } from './components/Settings/SettingsModal'
 import { SummaryModal } from './components/SummaryModal'
 import { useAiConnection } from './hooks/useAiConnection'
@@ -12,6 +13,7 @@ import { useAiTools } from './hooks/useAiTools'
 import { useAutocomplete } from './hooks/useAutocomplete'
 import { useDocuments } from './hooks/useDocuments'
 import { useDragAndDrop } from './hooks/useDragAndDrop'
+import { useEditorPrefs } from './hooks/useEditorPrefs'
 import { useI18n } from './hooks/useI18n'
 import { useLastAiEdit } from './hooks/useLastAiEdit'
 import { useTheme } from './hooks/useTheme'
@@ -31,6 +33,7 @@ export default function App() {
   const { theme, toggleTheme } = useTheme()
   const ai = useAiConnection()
   const tools = useAiTools()
+  const editorPrefs = useEditorPrefs()
   const editor = useGoWriteEditor(() => {}, t('editor.placeholder'))
   const docs = useDocuments(editor)
   const lastAiEdit = useLastAiEdit(editor)
@@ -94,7 +97,8 @@ export default function App() {
         docs={docs}
       />
 
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} quickFormatDelayMs={editorPrefs.config.quickFormatDelayMs} />
+      <MobileSupportButton />
 
       <SettingsModal
         open={settingsOpen}
@@ -105,11 +109,12 @@ export default function App() {
         docs={docs}
         ai={ai}
         tools={tools}
+        editorPrefs={editorPrefs}
       />
 
       <SummaryModal request={summaryRequest} onClose={() => setSummaryRequest(null)} ai={ai} />
 
-      <ContextMenu editor={editor} ai={ai} tools={tools} onOpenSummary={openSummary} onAiInsertion={lastAiEdit.record} />
+      <ContextMenu editor={editor} ai={ai} onOpenSummary={openSummary} onAiInsertion={lastAiEdit.record} />
 
       <main className="app-main" ref={containerRef}>
         {importError && (

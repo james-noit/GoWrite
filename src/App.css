@@ -61,12 +61,21 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  /* `flex-basis: 0` (rather than `auto`) stops this item's own preferred-size contribution to
+     the header's line-wrapping decision from being based on the filename's full, untruncated
+     content width — with `auto`, a long filename could claim the entire row on its own and push
+     the AI status/version group onto a second line, defeating the single-row layout below the
+     desktop breakpoint even though the filename itself still truncates correctly. */
+  flex: 1 1 0%;
   min-width: 0;
   order: 1;
 }
 
 .app-header-center {
-  display: flex;
+  /* Hidden below the desktop breakpoint so the header stays a single row on mobile — there
+     isn't room for a promotional block alongside the menu, filename, AI status and version.
+     Re-shown at 768px alongside the rest of the desktop grid layout. */
+  display: none;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -92,6 +101,9 @@
 }
 
 .app-brand {
+  /* Hidden on mobile to leave room for the filename in a single-row header — the menu icon
+     alone is enough of a target, and the wordmark isn't load-bearing for the icon's function. */
+  display: none;
   font-weight: 700;
   letter-spacing: -0.02em;
   background: linear-gradient(120deg, var(--accent), var(--accent-2));
@@ -102,6 +114,12 @@
 }
 
 .app-filename {
+  /* Shrinks to whatever room .app-header-left actually has — a viewport-relative max-width
+     would keep claiming the same fraction of the screen even after the header switches to its
+     3-column grid layout, where that fraction can be wider than the grid track itself and the
+     title visually overflows into the next column (the "Buy me a coffee" block). */
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 0.85rem;
   color: var(--text-2);
   background: transparent;
@@ -111,7 +129,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 34vw;
   cursor: text;
   transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
@@ -122,14 +139,14 @@
 }
 
 .app-filename-input {
+  flex: 1 1 auto;
   font-size: 0.85rem;
   color: var(--text-0);
   background: var(--bg-1);
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   padding: 3px 8px;
-  min-width: 150px;
-  max-width: 42vw;
+  min-width: 0;
   outline: none;
 }
 
@@ -137,6 +154,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .bmc-button {
@@ -215,6 +233,7 @@
 
 .menu-root {
   position: relative;
+  flex-shrink: 0;
 }
 
 .dropdown {
@@ -629,8 +648,9 @@
   z-index: 10;
 }
 
-/* Top row: on mobile this holds only the "Formato" toggle; the inline format groups take over
-   on desktop instead. The AI status card lives in the app header, not here. */
+/* This bar only renders at all on the desktop/fine-pointer tier — see Toolbar.tsx — where it
+   holds the always-visible inline format groups. Touch devices get no permanent toolbar strip;
+   see .format-fab and .quick-format-bar below instead. */
 
 .format-bar-top {
   display: flex;
@@ -643,24 +663,6 @@
 .format-bar-inline {
   display: flex;
   min-width: 0;
-}
-
-.format-tab {
-  flex: 1;
-  padding: 0 16px;
-  height: 52px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  color: var(--text-1);
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-}
-
-.format-tab:hover {
-  color: var(--text-0);
-  background: var(--border);
 }
 
 /* Mobile/tablet formatting sheet — portalled to <body> (see Toolbar.tsx) so it docks to the
@@ -707,6 +709,124 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-1);
+}
+
+/* Corner FAB — the touch tier's only always-present entry point into formatting, replacing the
+   old top toggle tab. Bottom-right avoids the thumb-reach dead zone at the top of a large phone
+   and keeps clear of the status bar / word count at the bottom of the editor. */
+.format-fab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px) + var(--kb-inset, 0px));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--accent-contrast);
+  box-shadow: var(--shadow-lg);
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.format-fab:active {
+  transform: scale(0.94);
+}
+
+/* Mobile stand-in for the header's "Buy me a coffee" badge — floats to the left of the format
+   FAB at the same size class, instead of the header's full wide image badge which has no room
+   in a single-row mobile header. */
+.mobile-coffee {
+  position: fixed;
+  right: calc(18px + 52px + 12px);
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px) + var(--kb-inset, 0px));
+  z-index: 40;
+}
+
+.mobile-coffee-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffdd00;
+  color: #000000;
+  box-shadow: var(--shadow-lg);
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.mobile-coffee-btn:active {
+  transform: scale(0.94);
+}
+
+.mobile-coffee-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mobile-coffee-close {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-1);
+  color: var(--text-1);
+  font-size: 0.6rem;
+  line-height: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Selection quick-format popup — anchored to the live selection via inline top/left (see
+   Toolbar.tsx), so only positioning is inline and everything else stays in CSS. */
+.quick-format-bar {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  transform: translate(-50%, calc(-100% - 10px));
+  background: var(--surface-strong);
+  backdrop-filter: blur(var(--blur-menu)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-menu)) saturate(180%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: popover-in var(--dur-fast) var(--ease);
+}
+
+.quick-format-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-1);
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.quick-format-btn.is-active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--accent-contrast);
+}
+
+.quick-format-more {
+  color: var(--text-2);
+  letter-spacing: 0.05em;
 }
 
 .toolbar-groups {
@@ -759,7 +879,9 @@
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
-  padding: 6px 14px;
+  /* Tighter on mobile, where the card shows only its status dot (see .toolbar-ai-label) — the
+     desktop padding would otherwise leave an oversized pill around almost nothing. */
+  padding: 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--bg-1)), color-mix(in srgb, var(--accent-2) 10%, var(--bg-1)));
@@ -897,6 +1019,10 @@
 }
 
 .toolbar-ai-label {
+  /* Hidden on mobile — with the meta text already hidden below 768px too, the card shrinks to
+     just its status dot (plus the autocomplete indicator when on), which is what keeps the
+     header down to a single row. The full label returns once there's room for it. */
+  display: none;
   white-space: nowrap;
 }
 
@@ -934,9 +1060,14 @@
 }
 
 .toolbar-ai-auto {
-  font-size: 0.8rem;
-  line-height: 1;
+  display: flex;
+  align-items: center;
   color: var(--accent-2);
+}
+
+.toolbar-ai-auto svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Desktop/wide-window strip — rendered only when Toolbar.tsx's FULL_TIER_QUERY matches (a fine
@@ -979,6 +1110,14 @@
 }
 
 @media (min-width: 768px) {
+  .toolbar-ai-card {
+    padding: 6px 14px;
+  }
+
+  .toolbar-ai-label {
+    display: inline;
+  }
+
   .toolbar-ai-meta {
     display: block;
     font-size: 0.68rem;
@@ -1960,98 +2099,10 @@
 
 /* ---------- AI tool cards ---------- */
 
-.tool-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.tool-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.tool-toggle-label {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-}
-
-.tool-toggle-label svg {
-  flex-shrink: 0;
-  color: var(--text-2);
-  transition: color var(--dur-fast) var(--ease);
-}
-
-.tool-toggle.is-on .tool-toggle-label svg {
-  color: var(--accent);
-}
-
-.tool-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  padding: 11px 14px;
-  background: transparent;
-  border: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-1);
-  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-}
-
-.tool-toggle:hover {
-  background: var(--border);
-}
-
-.tool-toggle.is-on {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-}
-
-.tool-check {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  font-size: 0.68rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent-contrast);
-  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
-}
-
-.tool-toggle.is-on .tool-check {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  border-color: transparent;
-}
-
-.tool-body {
-  padding: 4px 14px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  animation: dropdown-in var(--dur-fast) var(--ease);
-}
-
 .tool-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-}
-
-.tool-toggle-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
 }
 
 .tool-enable-row {
@@ -2066,9 +2117,17 @@
 }
 
 .tool-enable-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-1);
+}
+
+.tool-enable-label svg {
+  flex-shrink: 0;
+  color: var(--text-2);
 }
 
 .tool-flash {
@@ -2261,10 +2320,19 @@
 
   .app-header-left {
     order: initial;
+    /* `justify-self: start` opts this grid item out of the default stretch-to-track sizing,
+       which otherwise clips the filename; without an explicit cap the item sizes to its content
+       (the full untruncated title) and can overflow into the center column. */
     justify-self: start;
+    max-width: 100%;
+  }
+
+  .app-brand {
+    display: inline;
   }
 
   .app-header-center {
+    display: flex;
     order: initial;
     flex-basis: auto;
   }
@@ -2272,6 +2340,7 @@
   .app-header-right {
     order: initial;
     justify-self: end;
+    max-width: 100%;
   }
 
   .app-main {

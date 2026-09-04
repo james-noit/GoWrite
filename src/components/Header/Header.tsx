@@ -4,6 +4,7 @@ import type { UseDocuments } from '../../hooks/useDocuments'
 import { useI18n } from '../../hooks/useI18n'
 import type { TranslationKey } from '../../lib/i18n/translations'
 import type { FormatId } from '../../types'
+import { AutocompleteIcon } from '../icons'
 import { FileMenu } from './FileMenu'
 
 interface AiStatusCardProps {
@@ -45,7 +46,7 @@ function AiStatusCard({ ai, autocompleteEnabled, onOpen }: AiStatusCardProps) {
       </span>
       {autocompleteEnabled && (
         <span className="toolbar-ai-auto" title={t('ai.autocomplete')} aria-label={t('ai.autocomplete')}>
-          ⚡
+          <AutocompleteIcon />
         </span>
       )}
     </button>

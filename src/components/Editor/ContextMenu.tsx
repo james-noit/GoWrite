@@ -1,7 +1,6 @@
 import type { Editor } from '@tiptap/core'
 import { useEffect, useRef, useState } from 'react'
 import type { UseAiConnection } from '../../hooks/useAiConnection'
-import type { UseAiTools } from '../../hooks/useAiTools'
 import { useI18n } from '../../hooks/useI18n'
 import type { TranslationKey } from '../../lib/i18n/translations'
 import { continuationMessages, documentText, editMessages, formatMessages, generate } from '../../lib/ai/actions'
@@ -16,7 +15,6 @@ import { insertTableAction, tableEditActions } from './tableActions'
 interface ContextMenuProps {
   editor: Editor | null
   ai: UseAiConnection
-  tools: UseAiTools
   onOpenSummary: (text: string, titleKey: TranslationKey) => void
   onAiInsertion: (from: number, to: number) => void
 }
@@ -26,11 +24,13 @@ type Stage = 'menu' | 'options' | 'generating' | 'review'
 
 const MENU_WIDTH = 260
 const MENU_MAX_HEIGHT = 460
+const DEFAULT_GEN_MIN_WORDS = 50
+const DEFAULT_GEN_MAX_WORDS = 150
 
 /** Right-click menu inside the editor: the same format/table commands as the toolbar (icon-only),
  * plus selection-scoped AI actions (summarize, edit, autogenerate, give format). Built on the same
  * command definitions as Toolbar.tsx so the two surfaces can never drift apart. */
-export function ContextMenu({ editor, ai, tools, onOpenSummary, onAiInsertion }: ContextMenuProps) {
+export function ContextMenu({ editor, ai, onOpenSummary, onAiInsertion }: ContextMenuProps) {
   const { t } = useI18n()
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const [tool, setTool] = useState<Tool | null>(null)
@@ -40,8 +40,8 @@ export function ContextMenu({ editor, ai, tools, onOpenSummary, onAiInsertion }:
   const [imageSrc, setImageSrc] = useState<string | null>(null)
 
   const [instruction, setInstruction] = useState('')
-  const [genMin, setGenMin] = useState(tools.config.continueTool.minWords)
-  const [genMax, setGenMax] = useState(tools.config.continueTool.maxWords)
+  const [genMin, setGenMin] = useState(DEFAULT_GEN_MIN_WORDS)
+  const [genMax, setGenMax] = useState(DEFAULT_GEN_MAX_WORDS)
   const [formatScope, setFormatScope] = useState<'selection' | 'document'>('selection')
   const [fmtParagraphs, setFmtParagraphs] = useState(true)
   const [fmtPunctuation, setFmtPunctuation] = useState(true)
@@ -57,8 +57,6 @@ export function ContextMenu({ editor, ai, tools, onOpenSummary, onAiInsertion }:
 
   const rootRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<AbortController | null>(null)
-  const toolsRef = useRef(tools)
-  toolsRef.current = tools
 
   const close = () => {
     controllerRef.current?.abort()
@@ -99,8 +97,6 @@ export function ContextMenu({ editor, ai, tools, onOpenSummary, onAiInsertion }:
       setInsertAt(null)
       setError(null)
       setFormatScope(empty ? 'document' : 'selection')
-      setGenMin(toolsRef.current.config.continueTool.minWords)
-      setGenMax(toolsRef.current.config.continueTool.maxWords)
       const x = Math.max(10, Math.min(e.clientX, window.innerWidth - MENU_WIDTH - 10))
       const y = Math.max(10, Math.min(e.clientY, window.innerHeight - 10 - Math.min(MENU_MAX_HEIGHT, 320)))
       setPos({ x, y })
@@ -340,7 +336,7 @@ export function ContextMenu({ editor, ai, tools, onOpenSummary, onAiInsertion }:
           <div className="context-menu-divider" />
 
           <div className="context-menu-group" role="none">
-            {tools.config.summarize.enabled && (range ? (
+            {range ? (
               <>
                 <button
                   type="button"
@@ -390,7 +386,7 @@ export function ContextMenu({ editor, ai, tools, onOpenSummary, onAiInsertion }:
                 <SummarizeIcon />
                 {t('contextMenu.summarizeDocument')}
               </button>
-            ))}
+            )}
 
             {range && (
               <button
@@ -409,22 +405,20 @@ export function ContextMenu({ editor, ai, tools, onOpenSummary, onAiInsertion }:
               </button>
             )}
 
-            {tools.config.continueTool.enabled && (
-              <button
-                type="button"
-                role="menuitem"
-                className="context-menu-item"
-                disabled={aiDisabled}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setTool('generate')
-                  setStage('options')
-                }}
-              >
-                <AutoGenerateIcon />
-                {t('contextMenu.autogenerate')}
-              </button>
-            )}
+            <button
+              type="button"
+              role="menuitem"
+              className="context-menu-item"
+              disabled={aiDisabled}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setTool('generate')
+                setStage('options')
+              }}
+            >
+              <AutoGenerateIcon />
+              {t('contextMenu.autogenerate')}
+            </button>
 
             <button
               type="button"
