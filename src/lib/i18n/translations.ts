@@ -43,8 +43,6 @@ export const translations = {
 
     'toolbar.showFormatBar': 'Mostrar barra de formato',
     'toolbar.format': 'Formato',
-    'toolbar.pinOn': 'Desfijar la barra de formato',
-    'toolbar.pinOff': 'Fijar la barra de formato para que no se cierre',
     'toolbar.bold': 'Negrita',
     'toolbar.italic': 'Cursiva',
     'toolbar.underline': 'Subrayado',
@@ -236,8 +234,6 @@ export const translations = {
 
     'toolbar.showFormatBar': 'Show formatting bar',
     'toolbar.format': 'Format',
-    'toolbar.pinOn': 'Unpin the formatting bar',
-    'toolbar.pinOff': 'Pin the formatting bar so it stays open',
     'toolbar.bold': 'Bold',
     'toolbar.italic': 'Italic',
     'toolbar.underline': 'Underline',

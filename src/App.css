@@ -629,8 +629,8 @@
   z-index: 10;
 }
 
-/* Top row: the AI Tools card always sits here, alongside either the inline format groups
-   (desktop) or the "Formato" toggle (mobile) — never hidden inside the formatting accordion. */
+/* Top row: on mobile this holds only the "Formato" toggle; the inline format groups take over
+   on desktop instead. The AI status card lives in the app header, not here. */
 
 .format-bar-top {
   display: flex;
@@ -641,19 +641,19 @@
 }
 
 .format-bar-inline {
-  display: none;
+  display: flex;
   min-width: 0;
 }
 
 .format-tab {
-  flex-shrink: 0;
+  flex: 1;
   padding: 0 16px;
-  height: 60px;
+  height: 52px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text-1);
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
   transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
@@ -663,21 +663,50 @@
   background: var(--border);
 }
 
-/* Office-style accordion: expands in-flow, pushing the editor content down */
+/* Mobile/tablet formatting sheet — portalled to <body> (see Toolbar.tsx) so it docks to the
+   real viewport instead of the `.format-bar`'s own `backdrop-filter` containing block, and is
+   non-modal by design: no dimming backdrop, no focus trap. The document underneath stays fully
+   visible, scrollable and touchable while it's open, since formatting targets the document and
+   the user needs to keep seeing it — closing is an explicit action (the toggle, the close
+   button, or Escape), never an incidental tap outside. */
 
-.toolbar-accordion {
-  overflow: hidden;
-  max-height: 0;
-  transition: max-height var(--dur-med) var(--ease);
+.fmt-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--kb-inset, 0px));
+  z-index: 40;
+  max-height: min(60dvh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface-strong);
+  backdrop-filter: blur(var(--blur-menu)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-menu)) saturate(180%);
+  border-top: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-lg);
+  animation: sheet-in var(--dur-med) var(--ease);
 }
 
-.toolbar-accordion.is-open {
-  max-height: 360px;
-  border-bottom: 1px solid var(--border);
+.fmt-sheet-grab {
+  width: 36px;
+  height: 4px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: var(--border-strong);
 }
 
-.toolbar-accordion-inner {
-  position: relative;
+.fmt-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 0 14px;
+}
+
+.fmt-sheet-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-1);
 }
 
 .toolbar-groups {
@@ -685,7 +714,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
-  padding: 10px 8px 38px;
+  padding: 10px 8px 16px;
 }
 
 .toolbar-group {
@@ -722,17 +751,7 @@
   gap: 4px;
 }
 
-/* On wide viewports the Font card's buttons and typography controls sit on one line instead of
-   stacking, so the whole toolbar row keeps a single-line height instead of growing taller. */
-@media (min-width: 1100px) {
-  .toolbar-font-controls {
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-  }
-}
-
-/* AI status card: a self-contained toggle that opens the AI panel, showing connection state at a glance. */
+/* AI status card: a self-contained toggle that opens the AI settings, showing connection state at a glance. */
 
 .toolbar-ai-card {
   position: relative;
@@ -740,7 +759,6 @@
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
-  align-self: stretch;
   padding: 6px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -755,19 +773,31 @@
 /* One-shot welcome effect, played once on initial page load: a multicolour ring spins around
    the border, then a light reflection sweeps across, then the card pops slightly and settles. */
 
+/* Animating this custom property (rather than a `transform: rotate()` on the whole ring) spins
+   the conic-gradient's own start angle, so the colour band travels along the rounded-rect border
+   like a chasing "light train" — a transform instead would spin the ring as a rigid disc, which
+   reveals/hides the gradient unevenly on a non-square shape and reads as a wobble, not a spin. */
+@property --ai-intro-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .toolbar-ai-card.ai-intro::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 2px;
-  background: conic-gradient(from 0deg, var(--accent), var(--accent-2), var(--success), #f5a524, var(--accent));
+  background: conic-gradient(from var(--ai-intro-angle), var(--accent), var(--accent-2), var(--success), #f5a524, var(--accent));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
   pointer-events: none;
-  animation: ai-intro-spin 0.9s ease-in-out both;
+  animation:
+    ai-intro-spin-angle 1.3s linear both,
+    ai-intro-spin-fade 1.3s ease-in-out both;
 }
 
 .toolbar-ai-card.ai-intro::after {
@@ -778,26 +808,34 @@
   background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
   opacity: 0;
   pointer-events: none;
-  animation: ai-intro-reflect 0.6s ease-in 0.9s both;
+  animation: ai-intro-reflect 0.6s ease-in 1.3s both;
 }
 
 .toolbar-ai-card.ai-intro {
-  animation: ai-intro-pop 0.4s ease-out 1.5s both;
+  animation: ai-intro-pop 0.4s ease-out 1.9s both;
 }
 
-@keyframes ai-intro-spin {
+/* Two full laps around the border before fading out. */
+@keyframes ai-intro-spin-angle {
+  from {
+    --ai-intro-angle: 0deg;
+  }
+  to {
+    --ai-intro-angle: 720deg;
+  }
+}
+
+@keyframes ai-intro-spin-fade {
   0% {
-    transform: rotate(0deg);
     opacity: 0;
   }
-  10% {
+  8% {
     opacity: 1;
   }
-  90% {
+  92% {
     opacity: 1;
   }
   100% {
-    transform: rotate(360deg);
     opacity: 0;
   }
 }
@@ -901,63 +939,46 @@
   color: var(--accent-2);
 }
 
-.toolbar-pin {
-  position: absolute;
-  left: 6px;
-  bottom: 6px;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
+/* Desktop/wide-window strip — rendered only when Toolbar.tsx's FULL_TIER_QUERY matches (a fine
+   pointer at ≥768px, or any pointer at ≥1024px), so this is scoped to the `.format-bar-inline`
+   wrapper rather than gated by its own separate media query. That keeps "which layout renders"
+   decided in exactly one place (the JS media-query check) instead of duplicated in CSS, which is
+   what previously let a touch tablet fall into this dense single-row layout with a third of its
+   controls clipped behind an unlabeled horizontal scroll. */
+.format-bar-inline .toolbar-groups {
+  flex-wrap: nowrap;
   justify-content: center;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-1);
-  border-radius: var(--radius-sm);
-  font-size: 0.8rem;
-  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  overflow-x: auto;
+  padding: 0;
+  scroll-snap-type: x proximity;
+  /* Fades the row's own edges so a horizontally-scrollable strip (common on narrower desktop
+     windows, where every group rarely fits at once) visibly hints there's more to swipe to,
+     rather than looking like it's abruptly clipped. */
+  mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
 }
 
-.toolbar-pin:active {
-  transform: scale(0.92);
+.format-bar-inline .toolbar-group {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  scroll-snap-align: start;
 }
 
-.toolbar-pin.is-pinned {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, var(--bg-1));
+.format-bar-inline .toolbar-group + .toolbar-group {
+  border-left: 1px solid var(--border);
+}
+
+/* The Font group's buttons and typography controls sit on one line instead of stacking, so
+   every group in the scroll strip shares the same single-line height. */
+.format-bar-inline .toolbar-font-controls {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
 }
 
 @media (min-width: 768px) {
-  .format-bar-inline {
-    display: flex;
-    padding: 0;
-  }
-
-  .format-tab {
-    display: none;
-  }
-
-  .toolbar-accordion {
-    display: none;
-  }
-
-  .toolbar-groups {
-    flex-wrap: nowrap;
-    justify-content: center;
-    overflow-x: auto;
-    padding: 0;
-  }
-
-  .toolbar-group {
-    flex-shrink: 0;
-    border: none;
-    background: transparent;
-    padding: 4px 6px;
-  }
-
-  .toolbar-group + .toolbar-group {
-    border-left: 1px solid var(--border);
-  }
-
   .toolbar-ai-meta {
     display: block;
     font-size: 0.68rem;
@@ -969,8 +990,7 @@
     text-overflow: ellipsis;
   }
 
-  .toolbar-ai-card:hover .toolbar-ai-meta,
-  .toolbar-ai-card.is-open .toolbar-ai-meta {
+  .toolbar-ai-card:hover .toolbar-ai-meta {
     color: var(--text-1);
   }
 }
@@ -1028,6 +1048,19 @@
   border-color: var(--border-strong);
   background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--bg-1)), color-mix(in srgb, var(--accent-2) 8%, var(--bg-1)));
   color: var(--text-1);
+}
+
+/* Bump touch targets on coarse (touch) pointers so formatting buttons meet the ~40-44px minimum
+   recommended by mobile platform guidelines — 34px suits a mouse cursor but is easy to mis-tap. */
+@media (pointer: coarse) {
+  .toolbar-btn {
+    min-width: 42px;
+    height: 42px;
+  }
+
+  .toolbar-group-buttons {
+    gap: 6px;
+  }
 }
 
 /* ---------- Typography controls (color / font family / size / highlight) ---------- */

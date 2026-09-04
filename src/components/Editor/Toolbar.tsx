@@ -1,60 +1,38 @@
 import type { Editor } from "@tiptap/core";
-import { useEffect, useReducer, useRef, useState } from "react";
-import type { UseAiConnection } from "../../hooks/useAiConnection";
+import { useEffect, useReducer, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "../../hooks/useI18n";
-import type { TranslationKey } from "../../lib/i18n/translations";
 import { formatGroups as groups, type TFunction, type ToolbarButton } from "./formatGroups";
 import { formatPainter } from "./formatPainter";
 import { insertTableAction, tableEditActions } from "./tableActions";
 
-interface AiStatusCardProps {
-  ai: UseAiConnection;
-  autocompleteEnabled: boolean;
-  onOpen: () => void;
+type SavedSelection = { from: number; to: number } | null;
+
+// The desktop-style single-row strip only makes sense with a mouse (fine pointer) or on a
+// genuinely wide screen — a touch tablet at 768-1023px still needs the phone's disclosure sheet,
+// since a coarse pointer's larger touch targets would otherwise push a third of the controls off
+// the edge of a single non-wrapping row.
+const FULL_TIER_QUERY = "(min-width: 1024px), (min-width: 768px) and (pointer: fine)";
+
+function useMediaQuery(query: string): boolean {
+  const subscribe = (onChange: () => void) => {
+    const mql = window.matchMedia(query);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  };
+  const getSnapshot = () => window.matchMedia(query).matches;
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
-function AiStatusCard({ ai, autocompleteEnabled, onOpen }: AiStatusCardProps) {
-  const { t } = useI18n();
-  const [showIntro, setShowIntro] = useState(false);
-  const statusLabel = t(`ai.status.${ai.status}` as TranslationKey);
-  const metaText = ai.isConnected ? ai.config.model || ai.meta.defaultModel : statusLabel;
-
-  // One-shot welcome effect (spin the border, sweep a reflection, pop) once the page has
-  // fully finished loading — never replays afterwards, since this state only ever flips once.
-  useEffect(() => {
-    if (document.readyState === "complete") {
-      setShowIntro(true);
-      return;
-    }
-    const onLoad = () => setShowIntro(true);
-    window.addEventListener("load", onLoad, { once: true });
-    return () => window.removeEventListener("load", onLoad);
-  }, []);
-
-  return (
-    <button
-      type="button"
-      className={`toolbar-ai-card toolbar-ai-card--${ai.status}${showIntro ? " ai-intro" : ""}`}
-      onClick={onOpen}
-      aria-haspopup="dialog"
-      title={`${t("ai.buttonLabel")} — ${statusLabel}`}
-    >
-      <span className="toolbar-ai-dot" aria-hidden="true" />
-      <span className="toolbar-ai-text">
-        <span className="toolbar-ai-label">{t("ai.buttonLabel")}</span>
-        <span className="toolbar-ai-meta">{metaText}</span>
-      </span>
-      {autocompleteEnabled && (
-        <span
-          className="toolbar-ai-auto"
-          title={t("ai.autocomplete")}
-          aria-label={t("ai.autocomplete")}
-        >
-          ⚡
-        </span>
-      )}
-    </button>
-  );
+// The four native inputs below (two <select>, two <input type="color">) can't be guarded with
+// preventDefault — that would stop their pickers from opening — so instead we snapshot the
+// editor's selection whenever the user touches toolbar chrome, and restore it if the act of
+// opening a native picker collapsed it. Buttons don't need this: preventDefault on their
+// mousedown already keeps the selection alive.
+function restoreSelectionIfCollapsed(editor: Editor, saved: SavedSelection) {
+  if (!saved || saved.from === saved.to) return;
+  const { from, to } = editor.state.selection;
+  if (from === to) editor.commands.setTextSelection(saved);
 }
 
 const FONT_FAMILIES = [
@@ -73,7 +51,12 @@ const DEFAULT_FONT_SIZE_LABEL = "16px";
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
-function TypographyControls({ editor }: { editor: Editor }) {
+interface TypographyControlsProps {
+  editor: Editor;
+  getSavedSelection: () => SavedSelection;
+}
+
+function TypographyControls({ editor, getSavedSelection }: TypographyControlsProps) {
   const { t } = useI18n();
   const rawColor = (editor.getAttributes("textStyle").color as string | undefined) ?? "";
   const safeColor = HEX_COLOR_RE.test(rawColor) ? rawColor : "#000000";
@@ -92,7 +75,10 @@ function TypographyControls({ editor }: { editor: Editor }) {
           type="color"
           value={safeColor}
           aria-label={t("toolbar.fontColor")}
-          onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+          onChange={(e) => {
+            restoreSelectionIfCollapsed(editor, getSavedSelection());
+            editor.chain().focus().setColor(e.target.value).run();
+          }}
         />
       </span>
       {rawColor && (
@@ -113,6 +99,7 @@ function TypographyControls({ editor }: { editor: Editor }) {
         aria-label={t("toolbar.fontFamily")}
         value={currentFamily}
         onChange={(e) => {
+          restoreSelectionIfCollapsed(editor, getSavedSelection());
           const value = e.target.value;
           if (!value) editor.chain().focus().unsetFontFamily().run();
           else editor.chain().focus().setFontFamily(value).run();
@@ -132,6 +119,7 @@ function TypographyControls({ editor }: { editor: Editor }) {
         aria-label={t("toolbar.fontSize")}
         value={currentSize}
         onChange={(e) => {
+          restoreSelectionIfCollapsed(editor, getSavedSelection());
           const value = e.target.value;
           if (!value) editor.chain().focus().unsetFontSize().run();
           else editor.chain().focus().setFontSize(value).run();
@@ -153,7 +141,10 @@ function TypographyControls({ editor }: { editor: Editor }) {
           type="color"
           value={safeHighlight}
           aria-label={t("toolbar.fontBackground")}
-          onChange={(e) => editor.chain().focus().setHighlight({ color: e.target.value }).run()}
+          onChange={(e) => {
+            restoreSelectionIfCollapsed(editor, getSavedSelection());
+            editor.chain().focus().setHighlight({ color: e.target.value }).run();
+          }}
         />
       </span>
       {rawHighlight && (
@@ -231,7 +222,12 @@ function GroupButtons({ editor, buttons, t }: { editor: Editor; buttons: Toolbar
   );
 }
 
-function FormatGroups({ editor }: { editor: Editor }) {
+interface FormatGroupsProps {
+  editor: Editor;
+  getSavedSelection: () => SavedSelection;
+}
+
+function FormatGroups({ editor, getSavedSelection }: FormatGroupsProps) {
   const { t } = useI18n();
   return (
     <div className="toolbar-groups scroll-thin">
@@ -241,7 +237,7 @@ function FormatGroups({ editor }: { editor: Editor }) {
             <span className="toolbar-group-label">{t(group.labelKey)}</span>
             <div className="toolbar-font-controls">
               <GroupButtons editor={editor} buttons={group.buttons} t={t} />
-              <TypographyControls editor={editor} />
+              <TypographyControls editor={editor} getSavedSelection={getSavedSelection} />
             </div>
           </div>
         ) : (
@@ -258,21 +254,15 @@ function FormatGroups({ editor }: { editor: Editor }) {
 
 interface ToolbarProps {
   editor: Editor | null;
-  ai: UseAiConnection;
-  autocompleteEnabled: boolean;
-  onOpenAiSettings: () => void;
 }
 
-export function Toolbar({
-  editor,
-  ai,
-  autocompleteEnabled,
-  onOpenAiSettings,
-}: ToolbarProps) {
+export function Toolbar({ editor }: ToolbarProps) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [pinned, setPinned] = useState(false);
+  const isFullTier = useMediaQuery(FULL_TIER_QUERY);
   const rootRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const savedSelectionRef = useRef<SavedSelection>(null);
   const [, forceUpdate] = useReducer((c: number) => c + 1, 0);
 
   // The active/inactive state of each format button depends on the cursor's current marks/node,
@@ -291,59 +281,89 @@ export function Toolbar({
   // button toggling it off without editing the document), so it needs its own re-render trigger.
   useEffect(() => formatPainter.subscribe(() => forceUpdate()), []);
 
-  // On mobile, the accordion collapses when focus/clicks leave the toolbar — unless pinned.
+  // The sheet is non-modal by design (the document must stay reachable while formatting), so it
+  // only closes on an explicit action: the toggle, its own close button, or Escape.
   useEffect(() => {
-    if (!menuOpen || pinned) return;
-    const onFocusChange = (e: Event) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
+    if (!menuOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
     };
-    document.addEventListener("mousedown", onFocusChange);
-    document.addEventListener("focusin", onFocusChange);
-    return () => {
-      document.removeEventListener("mousedown", onFocusChange);
-      document.removeEventListener("focusin", onFocusChange);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
+
+  // The sheet is portalled to <body>, outside rootRef, so a single capture-phase listener
+  // covers both it and the inline toolbar: it snapshots the editor's selection whenever the user
+  // touches toolbar chrome, so a native picker that steals focus (a <select> or a color input)
+  // can have the selection restored before its command runs.
+  useEffect(() => {
+    if (!editor) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (!rootRef.current?.contains(target) && !sheetRef.current?.contains(target)) return;
+      const { from, to } = editor.state.selection;
+      savedSelectionRef.current = { from, to };
     };
-  }, [menuOpen, pinned]);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [editor]);
+
+  // The sheet can occlude the lower half of a short viewport, so nudge the caret back into view
+  // once it opens rather than leaving the user formatting text they can no longer see.
+  useEffect(() => {
+    if (!menuOpen || !editor) return;
+    const id = requestAnimationFrame(() => editor.commands.scrollIntoView());
+    return () => cancelAnimationFrame(id);
+  }, [menuOpen, editor]);
 
   if (!editor) return null;
+
+  const getSavedSelection = () => savedSelectionRef.current;
 
   return (
     <div className="format-bar glass-panel" ref={rootRef}>
       <div className="format-bar-top">
-        <div className="format-bar-inline">
-          <FormatGroups editor={editor} />
-        </div>
-
-        <button
-          type="button"
-          className="format-tab"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-expanded={menuOpen}
-          aria-label={t("toolbar.showFormatBar")}
-        >
-          {t("toolbar.format")} {menuOpen ? "▴" : "▾"}
-        </button>
-
-        <AiStatusCard ai={ai} autocompleteEnabled={autocompleteEnabled} onOpen={onOpenAiSettings} />
-      </div>
-
-      <div className={`toolbar-accordion${menuOpen ? " is-open" : ""}`}>
-        <div className="toolbar-accordion-inner">
-          <FormatGroups editor={editor} />
+        {isFullTier ? (
+          <div className="format-bar-inline">
+            <FormatGroups editor={editor} getSavedSelection={getSavedSelection} />
+          </div>
+        ) : (
           <button
             type="button"
-            className={`toolbar-pin${pinned ? " is-pinned" : ""}`}
+            className="format-tab"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setPinned((v) => !v)}
-            aria-pressed={pinned}
-            title={pinned ? t("toolbar.pinOn") : t("toolbar.pinOff")}
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-expanded={menuOpen}
+            aria-label={t("toolbar.showFormatBar")}
           >
-            📌
+            {t("toolbar.format")} {menuOpen ? "▴" : "▾"}
           </button>
-        </div>
+        )}
       </div>
+
+      {!isFullTier &&
+        menuOpen &&
+        createPortal(
+          <div className="fmt-sheet" role="group" aria-label={t("toolbar.format")} ref={sheetRef}>
+            <div className="fmt-sheet-grab" aria-hidden="true" />
+            <div className="fmt-sheet-header">
+              <span className="fmt-sheet-title">{t("toolbar.format")}</span>
+              <button
+                type="button"
+                className="icon-btn"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setMenuOpen(false)}
+                aria-label={t("common.close")}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="fmt-sheet-body">
+              <FormatGroups editor={editor} getSavedSelection={getSavedSelection} />
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

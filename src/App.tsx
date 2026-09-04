@@ -15,6 +15,7 @@ import { useDragAndDrop } from './hooks/useDragAndDrop'
 import { useI18n } from './hooks/useI18n'
 import { useLastAiEdit } from './hooks/useLastAiEdit'
 import { useTheme } from './hooks/useTheme'
+import { useViewportInsets } from './hooks/useViewportInsets'
 import { exportAs, formatRegistry, importFile } from './lib/formats'
 import type { TranslationKey } from './lib/i18n/translations'
 import type { SummaryRequest } from './components/SummaryModal'
@@ -35,6 +36,7 @@ export default function App() {
   const lastAiEdit = useLastAiEdit(editor)
 
   useAutocomplete(editor, ai, tools.config.autocomplete, lastAiEdit.record)
+  useViewportInsets()
 
   const [importing, setImporting] = useState(false)
 
@@ -86,15 +88,13 @@ export default function App() {
         onImport={handleImportFile}
         onExport={handleExport}
         onOpenSettings={() => openSettings('general')}
+        onOpenAiSettings={() => openSettings('ai')}
+        ai={ai}
+        autocompleteEnabled={tools.config.autocomplete.enabled}
         docs={docs}
       />
 
-      <Toolbar
-        editor={editor}
-        ai={ai}
-        autocompleteEnabled={tools.config.autocomplete.enabled}
-        onOpenAiSettings={() => openSettings('ai')}
-      />
+      <Toolbar editor={editor} />
 
       <SettingsModal
         open={settingsOpen}
