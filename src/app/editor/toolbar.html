@@ -7,7 +7,9 @@
     <div class="toolbar-groups" [attr.data-revision]="_r">
       @for (group of groups; track group.labelKey) {
         @if (group.labelKey === 'toolbar.group.font') {
-          <div class="toolbar-group">
+          <!-- role/aria-label carry the grouping for screen readers: the visible .toolbar-group-label
+          is hidden in the desktop inline bar (see theme.css) so it can be a single compact row. -->
+          <div class="toolbar-group" role="group" [attr.aria-label]="i18n.t(group.labelKey)">
             <span class="toolbar-group-label">{{ i18n.t(group.labelKey) }}</span>
             <div class="toolbar-font-controls">
               <gowrite-toolbar-buttons [editor]="editor" [buttons]="group.buttons" />
@@ -74,14 +76,14 @@
             </div>
           </div>
         } @else {
-          <div class="toolbar-group">
+          <div class="toolbar-group" role="group" [attr.aria-label]="i18n.t(group.labelKey)">
             <span class="toolbar-group-label">{{ i18n.t(group.labelKey) }}</span>
             <gowrite-toolbar-buttons [editor]="editor" [buttons]="group.buttons" />
           </div>
         }
       }
 
-      <div class="toolbar-group">
+      <div class="toolbar-group" role="group" [attr.aria-label]="i18n.t('toolbar.group.table')">
         <span class="toolbar-group-label">{{ i18n.t('toolbar.group.table') }}</span>
         <div class="toolbar-group-buttons">
           <button
@@ -115,7 +117,10 @@
   </ng-template>
 
   @if (isFullTier()) {
-    <div class="format-bar">
+    <!-- role="group", not "toolbar": WAI-ARIA expects a toolbar to implement roving-tabindex arrow
+    navigation, which this bar doesn't (every control is its own tab stop) — promising it would
+    mislead screen-reader users. Matches the mobile sheet's existing choice. -->
+    <div class="format-bar" role="group" [attr.aria-label]="i18n.t('toolbar.format')">
       <div class="format-bar-top">
         <div class="format-bar-inline">
           <ng-container [ngTemplateOutlet]="formatGroupsContent" />

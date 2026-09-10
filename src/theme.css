@@ -1076,37 +1076,46 @@
    decided in exactly one place (the JS media-query check) instead of duplicated in CSS, which is
    what previously let a touch tablet fall into this dense single-row layout with a third of its
    controls clipped behind an unlabeled horizontal scroll. */
+/* The inline bar wraps rather than scrolling horizontally. It used to be a nowrap strip with
+   `overflow-x: auto` and an edge-fade hint, but the full-toolbar tier starts at 768px (any
+   fine-pointer window) while the groups need ~1120px to lay out — so on any window narrower than
+   that, the row scrolled and silently parked bold/italic/underline off its left edge, i.e. the
+   four most-used controls in the app were behind an interaction nobody looks for. Wrapping keeps
+   every control reachable at every width, and only spends the extra row of height on the widths
+   that actually can't fit one. */
 .format-bar-inline .toolbar-groups {
-  flex-wrap: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
-  overflow-x: auto;
+  /* Tight gap within a group, wide gap between them: proximity alone carries the grouping, so
+     there are no divider borders to strand at a wrap point. */
+  gap: 6px 16px;
   padding: 0;
-  scroll-snap-type: x proximity;
-  /* Fades the row's own edges so a horizontally-scrollable strip (common on narrower desktop
-     windows, where every group rarely fits at once) visibly hints there's more to swipe to,
-     rather than looking like it's abruptly clipped. */
-  mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
 }
 
+/* One row per group instead of label-above-buttons: the label is dropped here (each button keeps
+   its own `title` tooltip, and the mobile sheet still shows the labels) which takes the bar from
+   two stacked rows down to one, buying back ~25px of writing space on every screen. */
 .format-bar-inline .toolbar-group {
   flex-shrink: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   border: none;
   background: transparent;
-  padding: 4px 6px;
-  scroll-snap-align: start;
+  padding: 0;
 }
 
-.format-bar-inline .toolbar-group + .toolbar-group {
-  border-left: 1px solid var(--border);
+.format-bar-inline .toolbar-group-label {
+  display: none;
 }
 
-/* The Font group's buttons and typography controls sit on one line instead of stacking, so
-   every group in the scroll strip shares the same single-line height. */
 .format-bar-inline .toolbar-font-controls {
   flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 @media (min-width: 768px) {
