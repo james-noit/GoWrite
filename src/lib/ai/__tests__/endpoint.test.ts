@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { customChatCompletionsUrl, customModelsUrl } from '../endpoint'
+import { customChatCompletionsUrl, customImagesUrl, customModelsUrl } from '../endpoint'
 
 describe('customChatCompletionsUrl', () => {
   it('appends /v1/chat/completions to a bare base URL', () => {
@@ -24,5 +24,14 @@ describe('customChatCompletionsUrl', () => {
 describe('customModelsUrl', () => {
   it('appends /v1/models to the origin only', () => {
     expect(customModelsUrl('http://127.0.0.1:1234/v1/chat/completions')).toBe('http://127.0.0.1:1234/v1/models')
+  })
+})
+
+describe('customImagesUrl', () => {
+  it('appends /v1/images/generations to the origin only', () => {
+    expect(customImagesUrl('http://127.0.0.1:1234/v1/chat/completions')).toBe(
+      'http://127.0.0.1:1234/v1/images/generations',
+    )
+    expect(customImagesUrl('http://127.0.0.1:1234/')).toBe('http://127.0.0.1:1234/v1/images/generations')
   })
 })

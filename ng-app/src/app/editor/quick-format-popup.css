@@ -1,0 +1,21 @@
+.quick-format-bar {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 8px));
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem;
+  background: #222;
+  color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  z-index: 60;
+}
+
+.quick-format-more {
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}

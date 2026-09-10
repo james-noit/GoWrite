@@ -1,0 +1,235 @@
+@if (open()) {
+  <div class="settings-backdrop" (click)="close()">
+    <div
+      class="settings-modal"
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-modal-title"
+    >
+      <div class="panel-header">
+        <h2 id="settings-modal-title">{{ i18n.t('settings.title') }}</h2>
+        <button type="button" class="icon-btn" (click)="close()" [attr.aria-label]="i18n.t('common.close')">✕</button>
+      </div>
+
+      <div class="settings-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab() === 'general'"
+          class="settings-tab"
+          [class.is-active]="tab() === 'general'"
+          (click)="setTab('general')"
+        >
+          {{ i18n.t('settings.tabGeneral') }}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab() === 'ai'"
+          class="settings-tab"
+          [class.is-active]="tab() === 'ai'"
+          (click)="setTab('ai')"
+        >
+          <span class="status-dot" [class]="'status-dot--' + ai.status()" aria-hidden="true"></span>
+          {{ i18n.t('settings.tabAiTools') }}
+        </button>
+      </div>
+
+      <div class="settings-body">
+        @if (tab() === 'general') {
+          <section class="settings-section">
+            <h3>{{ i18n.t('settings.appearance') }}</h3>
+            <div class="settings-row">
+              <span>{{ i18n.t('file.theme') }}</span>
+              <button type="button" role="switch" [attr.aria-checked]="theme.theme() === 'dark'" (click)="theme.toggleTheme()">
+                {{ theme.theme() === 'dark' ? '🌙' : '☀️' }}
+              </button>
+            </div>
+            <div class="settings-row">
+              <span>{{ i18n.t('file.language') }}</span>
+              <div class="language-toggle">
+                @for (l of locales; track l) {
+                  <button type="button" class="language-btn" [class.is-active]="i18n.locale() === l" (click)="setLocale(l)">
+                    {{ l.toUpperCase() }}
+                  </button>
+                }
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <h3>{{ i18n.t('settings.editor') }}</h3>
+            <label class="field-label" for="quick-format-delay">{{ i18n.t('settings.quickFormatDelay') }}</label>
+            <input
+              id="quick-format-delay"
+              class="field-input"
+              type="number"
+              min="100"
+              max="3000"
+              step="100"
+              [value]="editorPrefs.config().quickFormatDelayMs"
+              (change)="editorPrefs.update({ quickFormatDelayMs: +$any($event.target).value })"
+            />
+            <p class="field-hint">{{ i18n.t('settings.quickFormatDelayHint') }}</p>
+          </section>
+        }
+
+        @if (tab() === 'ai') {
+          <section class="ai-accordion">
+            <button type="button" class="ai-accordion-header" (click)="toggleConfigOpen()" [attr.aria-expanded]="configOpen()">
+              <span class="status-dot" [class]="'status-dot--' + ai.status()" aria-hidden="true"></span>
+              <span class="ai-accordion-title">{{ i18n.t('ai.configureProvider') }}</span>
+              <span class="conn-label">{{ statusLabel() }}</span>
+              <span class="chevron">{{ configOpen() ? '▾' : '▸' }}</span>
+            </button>
+
+            @if (configOpen()) {
+              <div class="ai-accordion-body">
+                <label class="field-label" for="ai-provider">{{ i18n.t('ai.provider') }}</label>
+                <select
+                  id="ai-provider"
+                  class="field-input"
+                  [value]="ai.config().provider"
+                  (change)="setProvider($any($event.target).value)"
+                >
+                  @for (p of providerList; track p.id) {
+                    <option [value]="p.id">{{ p.label }}</option>
+                  }
+                </select>
+
+                @if (ai.meta().endpointEditable) {
+                  <label class="field-label" for="ai-endpoint">{{ i18n.t('ai.server') }}</label>
+                  <input
+                    id="ai-endpoint"
+                    class="field-input"
+                    type="text"
+                    [placeholder]="ai.meta().defaultEndpoint"
+                    [value]="ai.config().customEndpoint"
+                    (input)="ai.updateField('customEndpoint', $any($event.target).value)"
+                  />
+                  @if (ai.meta().helpText) {
+                    <p class="field-hint">{{ ai.meta().helpText }}</p>
+                  }
+                }
+
+                <label class="field-label" for="ai-key">{{ ai.meta().apiKeyLabel }}</label>
+                <input
+                  id="ai-key"
+                  class="field-input"
+                  type="password"
+                  autocomplete="off"
+                  [value]="ai.config().apiKey"
+                  (input)="ai.updateField('apiKey', $any($event.target).value)"
+                />
+                <p class="field-hint">{{ i18n.t('ai.apiKeyStorageHint') }}</p>
+
+                <label class="field-label" for="ai-model">{{ i18n.t('ai.model') }}</label>
+                @if (ai.models().length > 0) {
+                  <select
+                    id="ai-model"
+                    class="field-input"
+                    [value]="ai.config().model || ai.models()[0]"
+                    (change)="ai.updateField('model', $any($event.target).value)"
+                  >
+                    @for (m of ai.models(); track m) {
+                      <option [value]="m">{{ m }}</option>
+                    }
+                  </select>
+                } @else {
+                  <input
+                    id="ai-model"
+                    class="field-input"
+                    type="text"
+                    [placeholder]="ai.meta().defaultModel"
+                    [value]="ai.config().model"
+                    (input)="ai.updateField('model', $any($event.target).value)"
+                  />
+                }
+                @if (ai.models().length === 0 && ai.isConnected()) {
+                  <p class="field-hint">{{ i18n.t('ai.modelFallbackHint') }}</p>
+                }
+
+                @if (ai.error()) {
+                  <p class="field-error" role="alert">{{ ai.error() }}</p>
+                }
+
+                <button type="button" class="connect-btn" [disabled]="ai.status() === 'connecting'" (click)="ai.connect()">
+                  @switch (ai.status()) {
+                    @case ('connecting') { {{ i18n.t('ai.connecting') }} }
+                    @case ('connected') { {{ i18n.t('ai.connected') }} }
+                    @case ('error') { {{ i18n.t('ai.retry') }} }
+                    @default { {{ i18n.t('ai.connect') }} }
+                  }
+                </button>
+              </div>
+            }
+          </section>
+
+          <section class="settings-section">
+            <h3>{{ i18n.t('ai.tools') }}</h3>
+            @if (!ai.isConnected()) {
+              <p class="field-hint">{{ i18n.t('ai.toolsDisconnectedHint') }}</p>
+            }
+
+            <div class="tool-enable-row">
+              <span>{{ i18n.t('ai.autocomplete') }}</span>
+              <button
+                type="button"
+                class="switch-track"
+                [class.is-on]="tools.config().autocomplete.enabled"
+                role="switch"
+                [attr.aria-checked]="tools.config().autocomplete.enabled"
+                (click)="toggleAutocomplete()"
+              >
+                <span class="switch-thumb"></span>
+              </button>
+            </div>
+            @if (autoFlash()) {
+              <span class="tool-flash">{{ autoFlash() === 'on' ? i18n.t('ai.autocompleteOn') : i18n.t('ai.autocompleteOff') }}</span>
+            }
+
+            <label class="field-label" for="auto-wait">{{ i18n.t('ai.waitSeconds') }}</label>
+            <input
+              id="auto-wait"
+              class="field-input"
+              type="number"
+              min="1"
+              max="30"
+              [value]="tools.config().autocomplete.waitSeconds"
+              (change)="tools.updateTool('autocomplete', { waitSeconds: +$any($event.target).value })"
+            />
+
+            <div class="tool-grid">
+              <div>
+                <label class="field-label" for="auto-min">{{ i18n.t('ai.minWords') }}</label>
+                <input
+                  id="auto-min"
+                  class="field-input"
+                  type="number"
+                  min="1"
+                  [value]="tools.config().autocomplete.minWords"
+                  (change)="tools.updateTool('autocomplete', { minWords: +$any($event.target).value })"
+                />
+              </div>
+              <div>
+                <label class="field-label" for="auto-max">{{ i18n.t('ai.maxWords') }}</label>
+                <input
+                  id="auto-max"
+                  class="field-input"
+                  type="number"
+                  min="1"
+                  [value]="tools.config().autocomplete.maxWords"
+                  (change)="tools.updateTool('autocomplete', { maxWords: +$any($event.target).value })"
+                />
+              </div>
+            </div>
+            <p class="field-hint">{{ i18n.t('ai.autocompleteHint') }}</p>
+          </section>
+        }
+      </div>
+    </div>
+  </div>
+}

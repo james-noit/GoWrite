@@ -6,6 +6,16 @@ import { ImageView } from './ImageView'
  * plain HTML attributes on the <img> so they round-trip through getHTML()/setContent() and
  * through tiptap-markdown's default image serializer without any extra wiring. */
 export const Image = TiptapImage.extend({
+  addOptions() {
+    return {
+      ...this.parent!(),
+      // Every image the app inserts (paste, file picker, AI-generated) is a data: URL — the base
+      // extension's default (false) exists to block data: URIs from arbitrary pasted/untrusted
+      // HTML, but here it silently dropped every image on re-import of the app's own HTML export
+      // (and of Markdown/ODT content carrying embedded HTML), which is strictly worse.
+      allowBase64: true,
+    }
+  },
   addAttributes() {
     return {
       ...this.parent?.(),

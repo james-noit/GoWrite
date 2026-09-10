@@ -1,0 +1,145 @@
+@if (editorService.editor(); as editor) {
+  @let _r = editorService.revision();
+
+  <ng-template #formatGroupsContent>
+    <!-- _r (see toolbar.ts) is what makes inTable()/action.isActive() below re-evaluate on every
+    editor transaction, e.g. moving the cursor in or out of a table. -->
+    <div class="toolbar-groups" [attr.data-revision]="_r">
+      @for (group of groups; track group.labelKey) {
+        @if (group.labelKey === 'toolbar.group.font') {
+          <div class="toolbar-group">
+            <span class="toolbar-group-label">{{ i18n.t(group.labelKey) }}</span>
+            <div class="toolbar-font-controls">
+              <gowrite-toolbar-buttons [editor]="editor" [buttons]="group.buttons" />
+
+              <div class="toolbar-typography">
+                <span class="toolbar-color-swatch" [title]="i18n.t('toolbar.fontColor')">
+                  <span class="toolbar-color-icon" aria-hidden="true">
+                    A<span class="toolbar-color-bar" [style.background-color]="color(editor)"></span>
+                  </span>
+                  <input
+                    type="color"
+                    [value]="color(editor)"
+                    [attr.aria-label]="i18n.t('toolbar.fontColor')"
+                    (change)="onColorChange(editor, $any($event.target).value)"
+                  />
+                </span>
+                @if (rawColor(editor)) {
+                  <button type="button" class="toolbar-color-clear" [title]="i18n.t('toolbar.clearFormat')" (mousedown)="$event.preventDefault()" (click)="onColorClear(editor)">
+                    ✕
+                  </button>
+                }
+
+                <select
+                  class="toolbar-select"
+                  [title]="i18n.t('toolbar.fontFamily')"
+                  [attr.aria-label]="i18n.t('toolbar.fontFamily')"
+                  [value]="fontFamily(editor)"
+                  (change)="onFontFamilyChange(editor, $any($event.target).value)"
+                >
+                  <option value="">{{ defaultFontFamilyLabel }}</option>
+                  @for (f of fontFamilies; track f.value) {
+                    <option [value]="f.value">{{ f.label }}</option>
+                  }
+                </select>
+
+                <select
+                  class="toolbar-select toolbar-select--size"
+                  [title]="i18n.t('toolbar.fontSize')"
+                  [attr.aria-label]="i18n.t('toolbar.fontSize')"
+                  [value]="fontSize(editor)"
+                  (change)="onFontSizeChange(editor, $any($event.target).value)"
+                >
+                  <option value="">{{ defaultFontSizeLabel }}</option>
+                  @for (size of fontSizes; track size) {
+                    <option [value]="size">{{ size }}</option>
+                  }
+                </select>
+
+                <span class="toolbar-color-swatch toolbar-color-swatch--highlight" [title]="i18n.t('toolbar.fontBackground')">
+                  <span class="toolbar-color-icon toolbar-color-icon--highlight" aria-hidden="true" [style.background-color]="highlight(editor)">A</span>
+                  <input
+                    type="color"
+                    [value]="highlight(editor)"
+                    [attr.aria-label]="i18n.t('toolbar.fontBackground')"
+                    (change)="onHighlightChange(editor, $any($event.target).value)"
+                  />
+                </span>
+                @if (rawHighlight(editor)) {
+                  <button type="button" class="toolbar-color-clear" [title]="i18n.t('toolbar.clearFormat')" (mousedown)="$event.preventDefault()" (click)="onHighlightClear(editor)">
+                    ✕
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="toolbar-group">
+            <span class="toolbar-group-label">{{ i18n.t(group.labelKey) }}</span>
+            <gowrite-toolbar-buttons [editor]="editor" [buttons]="group.buttons" />
+          </div>
+        }
+      }
+
+      <div class="toolbar-group">
+        <span class="toolbar-group-label">{{ i18n.t('toolbar.group.table') }}</span>
+        <div class="toolbar-group-buttons">
+          <button
+            type="button"
+            [title]="i18n.t(insertTableAction.titleKey)"
+            class="toolbar-btn toolbar-btn--labelled"
+            (mousedown)="$event.preventDefault()"
+            (click)="insertTableAction.run(editor)"
+          >
+            <gowrite-icon [name]="insertTableAction.icon" />
+            {{ i18n.t('toolbar.insertTableLabel') }}
+          </button>
+
+          @if (inTable(editor)) {
+            @for (action of tableEditActions; track action.key) {
+              <button
+                type="button"
+                [title]="i18n.t(action.titleKey)"
+                class="toolbar-btn"
+                [class.is-active]="action.isActive?.(editor) ?? false"
+                (mousedown)="$event.preventDefault()"
+                (click)="action.run(editor)"
+              >
+                <gowrite-icon [name]="action.icon" />
+              </button>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  @if (isFullTier()) {
+    <div class="format-bar">
+      <div class="format-bar-top">
+        <div class="format-bar-inline">
+          <ng-container [ngTemplateOutlet]="formatGroupsContent" />
+        </div>
+      </div>
+    </div>
+  } @else {
+    <gowrite-quick-format-popup [editor]="editor" [delayMs]="quickFormatDelayMs()" (expand)="menuOpen.set(true)" />
+
+    <button type="button" class="format-fab" (mousedown)="$event.preventDefault()" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen()" [attr.aria-label]="i18n.t('toolbar.showFormatBar')">
+      <gowrite-icon name="formatFab" />
+    </button>
+
+    @if (menuOpen()) {
+      <div class="fmt-sheet" role="group" [attr.aria-label]="i18n.t('toolbar.format')">
+        <div class="fmt-sheet-grab" aria-hidden="true"></div>
+        <div class="fmt-sheet-header">
+          <span class="fmt-sheet-title">{{ i18n.t('toolbar.format') }}</span>
+          <button type="button" class="icon-btn" (mousedown)="$event.preventDefault()" (click)="closeMenu()" [attr.aria-label]="i18n.t('common.close')">✕</button>
+        </div>
+        <div class="fmt-sheet-body">
+          <ng-container [ngTemplateOutlet]="formatGroupsContent" />
+        </div>
+      </div>
+    }
+  }
+}

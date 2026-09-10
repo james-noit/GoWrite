@@ -18,5 +18,12 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: false,
+    // e2e/ holds Playwright specs (run via `npm run test:e2e`), not Vitest ones — both use the
+    // .spec.ts suffix, so Vitest's default include glob would otherwise try to run them too.
+    // ng-app/ is the separate Angular workspace (its own `ng test` / Vitest-via-Angular-builder
+    // setup, which needs Angular's TestBed environment) — without this exclude, root `npm test`
+    // picks up its *.spec.ts files too and fails them all with "TestBed not initialized" errors,
+    // since plain Vitest here has no Angular builder wiring it up.
+    exclude: ['**/node_modules/**', '**/e2e/**', '**/ng-app/**'],
   },
 })

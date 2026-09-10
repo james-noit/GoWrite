@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { deleteDocument, listDocuments, newDocumentId, putDocument } from '../db'
+import { deleteDocument, getDocument, listDocuments, newDocumentId, putDocument } from '../db'
 
 const emptyDoc = { type: 'doc', content: [{ type: 'paragraph' }] }
 
@@ -54,6 +54,19 @@ describe('lib/db (IndexedDB document store)', () => {
 
     await deleteDocument(id)
     expect(await listDocuments()).toHaveLength(0)
+  })
+
+  it('fetches a single document by id', async () => {
+    const id = newDocumentId()
+    const now = Date.now()
+    await putDocument({ id, filename: 'single.md', content: emptyDoc, createdAt: now, updatedAt: now })
+
+    const doc = await getDocument(id)
+    expect(doc).toMatchObject({ id, filename: 'single.md' })
+  })
+
+  it('returns undefined for an id that does not exist', async () => {
+    expect(await getDocument('does-not-exist')).toBeUndefined()
   })
 
   it('generates unique ids', () => {

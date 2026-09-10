@@ -18,6 +18,8 @@ const NS = {
   table: 'urn:oasis:names:tc:opendocument:xmlns:table:1.0',
   fo: 'urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0',
   xlink: 'http://www.w3.org/1999/xlink',
+  draw: 'urn:oasis:names:tc:opendocument:xmlns:drawing:1.0',
+  svg: 'urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0',
 }
 
 function escapeXml(text: string): string {
@@ -204,9 +206,7 @@ function blockNodeToHtml(
     const items = Array.from(node.children)
       .filter((child) => child.localName === 'list-item')
       .map((item) => {
-        const inner = Array.from(item.children)
-          .map((child) => blockNodeToHtml(child, charStyles, listKinds, paraAlign))
-          .join('')
+        const inner = renderBlocks(Array.from(item.children), charStyles, listKinds, paraAlign)
         return `<li>${inner}</li>`
       })
       .join('')
@@ -221,7 +221,7 @@ function blockNodeToHtml(
           .filter((c) => c.localName === 'table-cell')
           .map((cellEl) => {
             const blocks = Array.from(cellEl.children).filter((c) => c.localName === 'p' || c.localName === 'h')
-            const innerHtml = blocks.map((b) => blockNodeToHtml(b, charStyles, listKinds, paraAlign)).join('') || '<p></p>'
+            const innerHtml = renderBlocks(blocks, charStyles, listKinds, paraAlign) || '<p></p>'
             const isHeaderCell =
               isHeaderRow || blocks.some((b) => b.getAttributeNS(NS.text, 'style-name') === 'TableHeader')
             const tag = isHeaderCell ? 'th' : 'td'
@@ -239,6 +239,42 @@ function blockNodeToHtml(
     .join('')
 }
 
+/** A code block is exported as one "Preformatted_Text"-styled <text:p> per source line (see
+ * blockToOdt's 'codeBlock' case) since ODT has no dedicated preformatted-block element — group
+ * consecutive occurrences back into a single <pre><code> on import so the block type survives the
+ * round-trip instead of degrading into a run of ordinary paragraphs. */
+function isPreformattedPara(el: Element): boolean {
+  return el.localName === 'p' && el.getAttributeNS(NS.text, 'style-name') === 'Preformatted_Text'
+}
+
+function renderBlocks(
+  elements: Element[],
+  charStyles: Map<string, CharStyleFlags>,
+  listKinds: Map<string, 'bullet' | 'number'>,
+  paraAlign: Map<string, string>,
+): string {
+  let html = ''
+  let i = 0
+  while (i < elements.length) {
+    if (isPreformattedPara(elements[i])) {
+      const lines: string[] = []
+      while (i < elements.length && isPreformattedPara(elements[i])) {
+        lines.push(
+          Array.from(elements[i].childNodes)
+            .map((child) => inlineNodeToHtml(child, charStyles))
+            .join(''),
+        )
+        i++
+      }
+      html += `<pre><code>${lines.join('\n')}</code></pre>`
+      continue
+    }
+    html += blockNodeToHtml(elements[i], charStyles, listKinds, paraAlign)
+    i++
+  }
+  return html
+}
+
 async function odtToHtml(file: File): Promise<string> {
   const zip = await JSZip.loadAsync(file)
   const contentXml = await zip.file('content.xml')?.async('text')
@@ -252,9 +288,7 @@ async function odtToHtml(file: File): Promise<string> {
   const bodyText = xmlDoc.getElementsByTagNameNS(NS.office, 'text')[0]
   if (!bodyText) return '<p></p>'
 
-  return Array.from(bodyText.children)
-    .map((child) => blockNodeToHtml(child, charStyles, listKinds, paraAlign))
-    .join('')
+  return renderBlocks(Array.from(bodyText.children), charStyles, listKinds, paraAlign)
 }
 
 // ---------- export: editor JSON -> .odt ----------
@@ -488,7 +522,7 @@ function buildContentXml(json: JSONContent, images: Map<string, OdtImageEntry>):
   const bodyXml = (json.content ?? []).map((node) => blockToOdt(node, 'Standard')).join('')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<office:document-content xmlns:office="${NS.office}" xmlns:style="${NS.style}" xmlns:text="${NS.text}" xmlns:table="${NS.table}" xmlns:fo="${NS.fo}" xmlns:xlink="${NS.xlink}" office:version="1.2">
+<office:document-content xmlns:office="${NS.office}" xmlns:style="${NS.style}" xmlns:text="${NS.text}" xmlns:table="${NS.table}" xmlns:fo="${NS.fo}" xmlns:xlink="${NS.xlink}" xmlns:draw="${NS.draw}" xmlns:svg="${NS.svg}" office:version="1.2">
   <office:automatic-styles>
     ${charStyleDefs.join('\n    ')}
     ${paraStyleDefs.join('\n    ')}

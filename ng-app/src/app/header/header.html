@@ -1,0 +1,53 @@
+<header class="app-header">
+  <div class="app-header-left">
+    <gowrite-file-menu (openSettings)="emitOpenSettings($event)" />
+
+    @if (isEditingTitle()) {
+      <input
+        #titleInput
+        class="app-filename-input"
+        [value]="draftTitle()"
+        (input)="draftTitle.set($any($event.target).value)"
+        (blur)="commitRename()"
+        (keydown)="onTitleKeydown($event)"
+      />
+    } @else {
+      <button type="button" class="app-filename" [title]="i18n.t('app.renameTitle')" (click)="startRename()">
+        {{ docs.currentFilename() }}
+      </button>
+    }
+  </div>
+
+  <div class="app-header-center">
+    <span class="bmc-support-label">{{ i18n.t('header.supportLabel') }}</span>
+    <a href="https://www.buymeacoffee.com/jamesnoitt" target="_blank" rel="noopener noreferrer" class="bmc-button">
+      <img
+        src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=jamesnoitt&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff"
+        alt="Buy me a coffee"
+      />
+    </a>
+  </div>
+
+  <div class="app-header-right">
+    <button
+      type="button"
+      class="toolbar-ai-card"
+      [class.ai-intro]="showIntro()"
+      (click)="openAiSettings.emit()"
+      aria-haspopup="dialog"
+      [title]="i18n.t('ai.buttonLabel') + ' — ' + statusLabel()"
+    >
+      <span class="toolbar-ai-dot" [class]="'toolbar-ai-dot--' + ai.status()" aria-hidden="true"></span>
+      <span class="toolbar-ai-text">
+        <span class="toolbar-ai-label">{{ i18n.t('ai.buttonLabel') }}</span>
+        <span class="toolbar-ai-meta">{{ metaText() }}</span>
+      </span>
+      @if (tools.config().autocomplete.enabled) {
+        <span class="toolbar-ai-auto" [title]="i18n.t('ai.autocomplete')" [attr.aria-label]="i18n.t('ai.autocomplete')">
+          <gowrite-icon name="autocomplete" />
+        </span>
+      }
+    </button>
+    <span class="app-version" [title]="'GoWrite v' + appVersion">v{{ appVersion }}</span>
+  </div>
+</header>

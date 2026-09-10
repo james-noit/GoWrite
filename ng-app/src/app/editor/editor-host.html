@@ -1,0 +1,29 @@
+<div class="editor-shell">
+  <gowrite-toolbar />
+
+  @if (importStatus.error()) {
+    <div class="import-error" role="alert">
+      ⚠️ {{ importStatus.error() }}
+      <button type="button" (click)="importStatus.dismiss()">✕</button>
+    </div>
+  }
+
+  <gowrite-context-menu (openSummary)="openSummary.emit($event)" />
+
+  <div class="editor-scroll" gowriteDragAndDrop (dropFile)="onFileDropped($event)">
+    <div #editorRoot class="editor-content"></div>
+    @if (lastAiEdit.hasUndo()) {
+      <button type="button" class="undo-ai-btn" (click)="undoLastAiEdit()">↩ Undo last AI generation</button>
+    }
+    @if (importStatus.importing() || !docs.ready()) {
+      <div class="doc-loader-overlay">
+        <gowrite-doc-loader />
+      </div>
+    }
+  </div>
+  <div class="status-bar" aria-live="polite">
+    <span>{{ wordCount().words }} {{ wordsLabel() }}</span>
+    <span class="status-bar-sep">·</span>
+    <span>{{ wordCount().chars }} {{ charsLabel() }}</span>
+  </div>
+</div>

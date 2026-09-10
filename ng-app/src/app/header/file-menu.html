@@ -1,0 +1,74 @@
+<div class="menu-root" #root>
+  <button
+    type="button"
+    class="header-btn header-btn--brand"
+    (click)="toggleOpen()"
+    [attr.aria-expanded]="open()"
+    [attr.aria-label]="i18n.t('file.menuLabel')"
+    [title]="i18n.t('file.menuLabel')"
+  >
+    <gowrite-icon name="menu" />
+    <span class="app-brand">GoWrite</span>
+  </button>
+
+  @if (open()) {
+    <div class="dropdown">
+      <button type="button" class="dropdown-item" (click)="newDocument()">{{ i18n.t('file.newDocument') }}</button>
+
+      <div class="dropdown-submenu-root">
+        <button type="button" class="dropdown-item" (click)="toggleDocsOpen()">
+          {{ i18n.t('file.documents') }} ({{ docs.documents().length }})
+          <span class="chevron">{{ docsOpen() ? '▾' : '▸' }}</span>
+        </button>
+        @if (docsOpen()) {
+          <div class="dropdown-submenu documents-submenu">
+            @if (docs.documents().length === 0) {
+              <p class="field-hint">{{ i18n.t('file.noDocuments') }}</p>
+            }
+            @for (d of docs.documents(); track d.id) {
+              <div class="document-row" [class.is-current]="d.id === docs.currentId()">
+                <button type="button" class="document-row-open" (click)="openDocument(d.id)" [title]="d.filename">
+                  <span class="document-row-name">{{ d.filename }}</span>
+                  <span class="document-row-date">{{ formatUpdatedAt(d.updatedAt) }}</span>
+                </button>
+                @if (docs.documents().length > 1) {
+                  <button
+                    type="button"
+                    class="document-row-delete"
+                    [attr.aria-label]="i18n.t('file.deleteDocument') + ': ' + d.filename"
+                    [title]="i18n.t('file.deleteDocument')"
+                    (click)="deleteDocument(d.id, d.filename)"
+                  >
+                    🗑️
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="dropdown-divider"></div>
+
+      <button type="button" class="dropdown-item" (click)="triggerImport()">{{ i18n.t('file.import') }}</button>
+      <input #fileInput type="file" [accept]="importAccept" hidden (change)="onFileSelected($event)" />
+
+      <div class="dropdown-submenu-root">
+        <button type="button" class="dropdown-item" (click)="toggleExportOpen()">
+          {{ i18n.t('file.exportAs') }} <span class="chevron">{{ exportOpen() ? '▾' : '▸' }}</span>
+        </button>
+        @if (exportOpen()) {
+          <div class="dropdown-submenu">
+            @for (format of formatList; track format.id) {
+              <button type="button" class="dropdown-item" (click)="exportAs(format.id)">{{ format.label }}</button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="dropdown-divider"></div>
+
+      <button type="button" class="dropdown-item" (click)="openSettingsTab()">{{ i18n.t('file.settings') }}</button>
+    </div>
+  }
+</div>

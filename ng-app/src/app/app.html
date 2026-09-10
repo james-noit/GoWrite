@@ -1,0 +1,9 @@
+<div class="app-shell">
+  <gowrite-header (openSettings)="openSettings($event)" (openAiSettings)="openSettings('ai')" />
+
+  <gowrite-editor-host (openSummary)="summaryRequest.set($event)" />
+  <gowrite-mobile-support-button />
+
+  <gowrite-settings-modal [open]="settingsOpen()" [initialTab]="settingsTab()" (closed)="closeSettings()" />
+  <gowrite-summary-modal [request]="summaryRequest()" (closed)="closeSummary()" />
+</div>

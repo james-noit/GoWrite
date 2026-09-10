@@ -1,0 +1,301 @@
+@if (editorService.editor(); as editor) {
+  @if (pos(); as p) {
+    <div
+      #root
+      class="context-menu"
+      role="menu"
+      [style.left.px]="p.x"
+      [style.top.px]="p.y"
+      [style.max-height.px]="menuMaxHeight"
+    >
+      @switch (stage()) {
+        @case ('menu') {
+          <div class="context-menu-icons">
+            @for (btn of flatFormatButtons; track btn.titleKey) {
+              <button
+                type="button"
+                [title]="i18n.t(btn.titleKey)"
+                [attr.aria-label]="i18n.t(btn.titleKey)"
+                class="context-menu-icon-btn"
+                [class.is-active]="btn.isActive?.(editor) ?? false"
+                (mousedown)="stopPropagation($event)"
+                (click)="runFormatButton(editor, btn.run)"
+              >
+                @if (btn.icon) {
+                  <gowrite-icon [name]="btn.icon" />
+                } @else if (btn.labelKey) {
+                  {{ i18n.t(btn.labelKey) }}
+                } @else {
+                  {{ btn.label }}
+                }
+              </button>
+            }
+          </div>
+
+          <div class="context-menu-divider"></div>
+
+          <div class="context-menu-icons">
+            <button
+              type="button"
+              [title]="i18n.t(insertTableAction.titleKey)"
+              [attr.aria-label]="i18n.t(insertTableAction.titleKey)"
+              class="context-menu-icon-btn"
+              (mousedown)="stopPropagation($event)"
+              (click)="runTableAction(editor, insertTableAction.run)"
+            >
+              <gowrite-icon [name]="insertTableAction.icon" />
+            </button>
+            @if (inTable(editor)) {
+              @for (action of tableEditActions; track action.key) {
+                <button
+                  type="button"
+                  [title]="i18n.t(action.titleKey)"
+                  [attr.aria-label]="i18n.t(action.titleKey)"
+                  class="context-menu-icon-btn"
+                  [class.is-active]="action.isActive?.(editor) ?? false"
+                  (mousedown)="stopPropagation($event)"
+                  (click)="runTableAction(editor, action.run)"
+                >
+                  <gowrite-icon [name]="action.icon" />
+                </button>
+              }
+            }
+          </div>
+
+          <div class="context-menu-divider"></div>
+
+          <div class="context-menu-group" role="none">
+            @if (range(); as r) {
+              <button type="button" role="menuitem" class="context-menu-item" [disabled]="aiDisabled()" (mousedown)="stopPropagation($event)" (click)="summarizeSelection(editor)">
+                <gowrite-icon name="summarize" />
+                {{ i18n.t('contextMenu.summarizeSelection') }}
+              </button>
+              <button type="button" role="menuitem" class="context-menu-item" [disabled]="aiDisabled()" (mousedown)="stopPropagation($event)" (click)="summarizeBefore(editor)">
+                <gowrite-icon name="summarize" />
+                {{ i18n.t('contextMenu.summarizeBefore') }}
+              </button>
+              <button type="button" role="menuitem" class="context-menu-item" [disabled]="aiDisabled()" (mousedown)="stopPropagation($event)" (click)="summarizeAfter(editor)">
+                <gowrite-icon name="summarize" />
+                {{ i18n.t('contextMenu.summarizeAfter') }}
+              </button>
+            } @else {
+              <button type="button" role="menuitem" class="context-menu-item" [disabled]="aiDisabled()" (mousedown)="stopPropagation($event)" (click)="summarizeDocument(editor)">
+                <gowrite-icon name="summarize" />
+                {{ i18n.t('contextMenu.summarizeDocument') }}
+              </button>
+            }
+
+            @if (range()) {
+              <button type="button" role="menuitem" class="context-menu-item" [disabled]="aiDisabled()" (mousedown)="stopPropagation($event)" (click)="openTool('edit')">
+                <gowrite-icon name="autoGenerate" />
+                {{ i18n.t('contextMenu.editWithAi') }}
+              </button>
+            }
+
+            <button type="button" role="menuitem" class="context-menu-item" [disabled]="aiDisabled()" (mousedown)="stopPropagation($event)" (click)="openTool('generate')">
+              <gowrite-icon name="autoGenerate" />
+              {{ i18n.t('contextMenu.autogenerate') }}
+            </button>
+
+            <button type="button" role="menuitem" class="context-menu-item" [disabled]="aiDisabled()" (mousedown)="stopPropagation($event)" (click)="openTool('format')">
+              <gowrite-icon name="giveFormat" />
+              {{ i18n.t('contextMenu.giveFormat') }}
+            </button>
+
+            <button type="button" role="menuitem" class="context-menu-item" [disabled]="aiDisabled()" (mousedown)="stopPropagation($event)" (click)="openTool('image')">
+              <gowrite-icon name="aiImage" />
+              {{ i18n.t('contextMenu.aiImage') }}
+            </button>
+
+            @if (imageSrc()) {
+              <button type="button" role="menuitem" class="context-menu-item" [disabled]="aiDisabled()" (mousedown)="stopPropagation($event)" (click)="openTool('describe')">
+                <gowrite-icon name="describeImage" />
+                {{ i18n.t('contextMenu.aiDescribe') }}
+              </button>
+            }
+          </div>
+        }
+
+        @case ('options') {
+          @switch (tool()) {
+            @case ('edit') {
+              <div class="context-menu-prompt">
+                @if (error(); as err) {
+                  <p class="field-error" role="alert">{{ err }}</p>
+                }
+                <input
+                  class="field-input"
+                  type="text"
+                  autofocus
+                  [placeholder]="i18n.t('contextMenu.editWithAiPlaceholder')"
+                  [value]="instruction()"
+                  (input)="instruction.set($any($event.target).value)"
+                  (keydown.enter)="runTool()"
+                />
+                <div class="action-row">
+                  <button type="button" class="connect-btn connect-btn--ghost" (click)="backToMenu()">{{ i18n.t('common.cancel') }}</button>
+                  <button type="button" class="connect-btn" [disabled]="!instruction().trim()" (click)="runTool()">{{ i18n.t('ai.apply') }}</button>
+                </div>
+              </div>
+            }
+            @case ('generate') {
+              <div class="context-menu-prompt">
+                @if (error(); as err) {
+                  <p class="field-error" role="alert">{{ err }}</p>
+                }
+                <div class="tool-grid">
+                  <div>
+                    <label class="field-label" for="cm-gen-min">{{ i18n.t('ai.minWords') }}</label>
+                    <input id="cm-gen-min" class="field-input" type="number" min="1" [value]="genMin()" (input)="setGenMin($any($event.target).value)" />
+                  </div>
+                  <div>
+                    <label class="field-label" for="cm-gen-max">{{ i18n.t('ai.maxWords') }}</label>
+                    <input id="cm-gen-max" class="field-input" type="number" min="1" [value]="genMax()" (input)="setGenMax($any($event.target).value)" />
+                  </div>
+                </div>
+                <div class="action-row">
+                  <button type="button" class="connect-btn connect-btn--ghost" (click)="backToMenu()">{{ i18n.t('common.cancel') }}</button>
+                  <button type="button" class="connect-btn" (click)="runTool()">{{ i18n.t('ai.autoGenerateBtn') }}</button>
+                </div>
+              </div>
+            }
+            @case ('format') {
+              <div class="context-menu-prompt">
+                @if (error(); as err) {
+                  <p class="field-error" role="alert">{{ err }}</p>
+                }
+                @if (range()) {
+                  <span class="field-label">{{ i18n.t('contextMenu.giveFormatScope') }}</span>
+                  <div class="context-menu-scope-row">
+                    <label>
+                      <input type="radio" name="cm-format-scope" [checked]="formatScope() === 'selection'" (change)="formatScope.set('selection')" />
+                      {{ i18n.t('contextMenu.giveFormatScopeSelection') }}
+                    </label>
+                    <label>
+                      <input type="radio" name="cm-format-scope" [checked]="formatScope() === 'document'" (change)="formatScope.set('document')" />
+                      {{ i18n.t('contextMenu.giveFormatScopeDocument') }}
+                    </label>
+                  </div>
+                }
+                <label class="context-menu-checkbox-row">
+                  <input type="checkbox" [checked]="fmtParagraphs()" (change)="fmtParagraphs.set($any($event.target).checked)" />
+                  {{ i18n.t('contextMenu.giveFormatOptionParagraphs') }}
+                </label>
+                <label class="context-menu-checkbox-row">
+                  <input type="checkbox" [checked]="fmtPunctuation()" (change)="fmtPunctuation.set($any($event.target).checked)" />
+                  {{ i18n.t('contextMenu.giveFormatOptionPunctuation') }}
+                </label>
+                <label class="context-menu-checkbox-row">
+                  <input type="checkbox" [checked]="fmtStructure()" (change)="fmtStructure.set($any($event.target).checked)" />
+                  {{ i18n.t('contextMenu.giveFormatOptionStructure') }}
+                </label>
+                <div class="action-row">
+                  <button type="button" class="connect-btn connect-btn--ghost" (click)="backToMenu()">{{ i18n.t('common.cancel') }}</button>
+                  <button
+                    type="button"
+                    class="connect-btn"
+                    [disabled]="!fmtParagraphs() && !fmtPunctuation() && !fmtStructure()"
+                    (click)="runTool()"
+                  >
+                    {{ i18n.t('ai.apply') }}
+                  </button>
+                </div>
+              </div>
+            }
+            @case ('image') {
+              <div class="context-menu-prompt">
+                @if (!supportsImageGen()) {
+                  <p class="field-hint context-menu-notice">{{ i18n.t('contextMenu.aiImageUnsupported') }}</p>
+                }
+                @if (error(); as err) {
+                  <p class="field-error" role="alert">{{ err }}</p>
+                }
+                <textarea
+                  class="field-input gen-draft scroll-thin"
+                  autofocus
+                  [placeholder]="i18n.t('contextMenu.aiImagePlaceholder')"
+                  [value]="imagePrompt()"
+                  [disabled]="!supportsImageGen()"
+                  (input)="imagePrompt.set($any($event.target).value)"
+                ></textarea>
+                <div class="action-row">
+                  <button type="button" class="connect-btn connect-btn--ghost" (click)="backToMenu()">{{ i18n.t('common.cancel') }}</button>
+                  <button
+                    type="button"
+                    class="connect-btn"
+                    [disabled]="!imagePrompt().trim() || !supportsImageGen()"
+                    (click)="runImageTool()"
+                  >
+                    {{ i18n.t('contextMenu.aiImageGenerate') }}
+                  </button>
+                </div>
+              </div>
+            }
+            @case ('describe') {
+              <div class="context-menu-prompt">
+                @if (!supportsImageDescribe()) {
+                  <p class="field-hint context-menu-notice">{{ i18n.t('contextMenu.aiDescribeUnsupported') }}</p>
+                }
+                @if (error(); as err) {
+                  <p class="field-error" role="alert">{{ err }}</p>
+                }
+                <textarea
+                  class="field-input gen-draft scroll-thin"
+                  autofocus
+                  [placeholder]="i18n.t('contextMenu.aiDescribePlaceholder')"
+                  [value]="describePrompt()"
+                  [disabled]="!supportsImageDescribe()"
+                  (input)="describePrompt.set($any($event.target).value)"
+                ></textarea>
+                <div class="action-row">
+                  <button type="button" class="connect-btn connect-btn--ghost" (click)="backToMenu()">{{ i18n.t('common.cancel') }}</button>
+                  <button
+                    type="button"
+                    class="connect-btn"
+                    [disabled]="!describePrompt().trim() || !supportsImageDescribe()"
+                    (click)="runDescribeTool()"
+                  >
+                    {{ i18n.t('contextMenu.aiDescribeGenerate') }}
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        }
+
+        @case ('generating') {
+          <div class="context-menu-prompt">
+            <gowrite-funny-loader />
+            <button type="button" class="connect-btn connect-btn--danger" (click)="abortGenerating()">{{ i18n.t('ai.stop') }}</button>
+          </div>
+        }
+
+        @case ('review') {
+          @if (tool() === 'describe') {
+            <div class="context-menu-prompt">
+              @if (error(); as err) {
+                <p class="field-error" role="alert">{{ err }}</p>
+              }
+              <textarea class="field-input gen-draft scroll-thin" [value]="draft()" readonly></textarea>
+              <div class="action-row">
+                <button type="button" class="connect-btn connect-btn--ghost" (click)="stage.set('options')">{{ i18n.t('contextMenu.aiDescribeEditPrompt') }}</button>
+                <button type="button" class="connect-btn connect-btn--connected" (click)="copyDescription()">
+                  {{ copied() ? i18n.t('summary.copied') : i18n.t('summary.copy') }}
+                </button>
+                <button type="button" class="connect-btn connect-btn--danger" (click)="close()">{{ i18n.t('common.close') }}</button>
+              </div>
+            </div>
+          } @else {
+            <div class="context-menu-prompt">
+              <textarea class="field-input gen-draft scroll-thin" [value]="draft()" (input)="draft.set($any($event.target).value)"></textarea>
+              <div class="action-row">
+                <button type="button" class="connect-btn connect-btn--connected" (click)="acceptDraft()">{{ i18n.t('ai.accept') }}</button>
+                <button type="button" class="connect-btn connect-btn--danger" (click)="close()">{{ i18n.t('ai.discard') }}</button>
+              </div>
+            </div>
+          }
+        }
+      }
+    </div>
+  }
+}
