@@ -4,6 +4,17 @@ node_modules/
 # Build output
 dist/
 build/
+/out-tsc/
+/bazel-out/
+
+# Angular
+/.angular/cache/
+.sass-cache/
+/connect.lock
+/libpeerconnection.log
+testem.log
+/typings/
+__screenshots__/
 
 # IDE
 .idea/

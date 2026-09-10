@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "ng-app": {
+    "gowrite": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -59,10 +59,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "ng-app:build:production"
+              "buildTarget": "gowrite:build:production"
             },
             "development": {
-              "buildTarget": "ng-app:build:development"
+              "buildTarget": "gowrite:build:development"
             }
           },
           "defaultConfiguration": "development"

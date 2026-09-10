@@ -1,6 +1,8 @@
 # GoWrite → Angular migration plan
 
-Status: **Phase 5 substantially done** (2026-09-10) — AI layer ported: `lib/ai/*`, `AiConnectionService`/`AiToolsService`/`AutocompleteService`/`LastAiEditService`, `SettingsModal`, `SummaryModal`. **`ContextMenu` deliberately deferred to Phase 6** (see §11) — reprioritized out of Phase 5's original scope. Phases 1–4 done the same day (§6–§9). Written for execution across multiple future sessions with Sonnet 5. Update this file as phases complete or decisions change — it is the single source of truth for the migration, not a one-off memo.
+Status: **Migration complete and cut over** (2026-09-10) — see §17 for the cutover itself. Every phase in the original roadmap (§4) is done: safety-net tests, the Angular port (editor core, formats, AI layer, remaining UI, `ContextMenu`), and Track B E2E parity verification (§15, 27/27 specs passing identically on both apps before cutover). This file is kept as the historical record of how the migration happened, bug-by-bug and decision-by-decision — not a live status doc anymore.
+
+**A note on file paths below, read this before following any link**: sections written *before* §17 refer to the Angular app under `ng-app/src/...` and the React app under `src/...`, because that's where each one lived *at the time that section was written* — the React app has since been removed and `ng-app/`'s contents moved to the repo root (§17), so today's `src/` is the Angular app both old naming schemes eventually point at. Historical sections are left exactly as originally written rather than rewritten with hindsight; §17 is the only section describing the repo's current, post-cutover layout.
 
 ## 0. What GoWrite is today
 
@@ -74,7 +76,7 @@ Mock AI network calls at the HTTP layer (Playwright route interception) — neve
 
 Each phase should ship as its own PR (or small stack of PRs) against the long-lived migration branch, reviewed independently — an 8-phase, 60-file rewrite in one PR is not reviewable.
 
-**Table now out of date on one point**: `ContextMenu` (originally folded into Phase 5's row, then into Phase 6's) has been deferred twice — see §11 — and needs its own phase, informally "Phase 7", inserted before what this table calls Phase 7 (parity verification) and 8 (cutover). Not renumbering the table itself to avoid rewriting every cross-reference to "Phase 8" scattered through §12/§13; treat the table's Phase 7/8 as one slot later than written once the `ContextMenu` phase is scheduled.
+**Table update, now that every phase is done**: `ContextMenu` (originally folded into Phase 5's row, then Phase 6's) ended up deferred twice — see §11 — and got its own informal "Phase 7" (§14), pushing the table's "Phase 7" (parity verification, actually done in §15) and "Phase 8" (cutover, §17) one slot later each in execution order, though their goals/risks as originally written held up unchanged.
 
 ## 5. React → Angular file/concept map
 
@@ -247,18 +249,40 @@ In practice, Phase 6 (§12) turned out to be large enough on its own — `Docume
 
 **One real, pre-existing repo-hygiene bug found and fixed while re-running the React app's own test suite as a sanity check**: root [vitest.config.ts](vitest.config.ts)'s `exclude` list only ever excluded `node_modules/` and `e2e/` — nobody updated it when `ng-app/` was scaffolded in Phase 2, so plain `npm test` at the repo root picked up `ng-app/src/**/*.spec.ts` too and failed all of them with "TestBed not initialized" (root Vitest has no Angular builder wiring TestBed up the way `ng test` does). This had gone unnoticed simply because nobody had run root `npm test` since `ng-app/` started existing. Fixed by adding `'**/ng-app/**'` to the exclude list — React's own suite is back to a clean 117/117.
 
-## 16. Open decisions (recommended defaults above — override any of these by just telling me)
+## 16. Open decisions — final status
 
-1. Repo layout: new `ng-app/` directory alongside `src/` on a migration branch (recommended) vs. a separate repo entirely. *(Still on `main` directly, no branch — flag if you want one.)*
-2. ~~Whether to fix the `FunnyLoader.tsx`/`funny-loader.ts` and `useDocuments.ts` default-filename i18n gaps (§6, item 7) in React now, or carry them into the Angular port.~~ Carried into the Angular port unchanged in Phases 5/6, per the default above; still open whether to backport the fix to the React app before it's retired.
-3. Angular CDK adoption for media-query (`BreakpointObserver`) — focus-trap is resolved (adopted, §10). `MediaQueryService` stayed hand-rolled through Phases 6–7, with no problems surfacing; likely fine to leave as-is.
-4. Whether cutover replaces `src/` in place or the deploy target simply points at `ng-app/`'s build output going forward, with `src/` removed in a follow-up cleanup PR. **Still open — this is the one decision cutover itself can't safely default past; see the Next step below.**
-5. Whether to implement ODT image import (§6, item 4) — a real feature addition — before cutover, or leave it as a known, documented gap indefinitely.
-6. Whether to set up CI now (no existing CI in this repo to extend) or defer until closer to cutover.
-7. Whether the `@tiptap/*` version drift noted in §8 (3.31.3 across the board in `ng-app`, vs. the React app's pinned 3.27.3) matters enough to pin down further — nothing in Phases 3–7's testing surfaced a behavior difference.
+1. ~~Repo layout: new `ng-app/` directory alongside `src/` on a migration branch vs. a separate repo entirely.~~ Resolved by cutover (§17): `ng-app/`'s contents now *are* the repo root; the directory no longer exists.
+2. ~~Whether to fix the `FunnyLoader.tsx`/`useDocuments.ts` default-filename i18n gaps (§6, item 7) in React now, or carry them into the Angular port.~~ Carried into the Angular port unchanged (Phases 5/6); moot now that the React app is retired — the gap lives only in git history.
+3. Angular CDK adoption for media-query (`BreakpointObserver`) — focus-trap is resolved (adopted, §10). `MediaQueryService` stayed hand-rolled through the whole migration with no problems surfacing; left as-is. Still open if a future caller wants what `BreakpointObserver` gives for free.
+4. ~~Whether cutover replaces `src/` in place or the deploy target simply points at `ng-app/`'s build output.~~ Resolved: full cutover, `src/` replaced in place (§17), per explicit instruction.
+5. Whether to implement ODT image import (§6, item 4) — a real feature addition — is still open; a known, documented gap (still true post-cutover, unchanged since Phase 4).
+6. Whether to set up CI is still open — no existing CI in this repo, cutover didn't add one (wasn't asked for).
+7. The `@tiptap/*` version drift noted in §8 stands (3.31.3 across the board, vs. the original React app's pinned 3.27.3) — moot now that the React app is retired; there's only one version in play.
 8. ~~`ContextMenu`'s redesign needs its own phase.~~ Done — §14.
-9. Full CSS visual parity (§0/§1, ~2,486 lines in the original) is still entirely deferred — every Angular component so far uses minimal functional styling only. Worth deciding whether that's its own phase before cutover, or an ongoing background task.
+9. Full CSS visual parity (§0/§1, ~2,486 lines in the original React app) is still entirely deferred — every component uses minimal functional styling only. Still open, and now the only structural gap left before the Angular app looks like the original rather than just behaving like it.
+
+## 17. Cutover results (2026-09-10)
+
+Done on explicit instruction, on a new `angular-refactor` branch (created from `main`), in two commits: a checkpoint committing every phase's work with both apps still side by side, then the cutover itself.
+
+**What moved**: `ng-app/`'s contents (`src/`, `public/`, `angular.json`, `tsconfig*.json`, `package.json`/`package-lock.json`, `.editorconfig`, `.prettierrc`) became the repo root's. The React app's `src/`, `public/`, `index.html`, `vite.config.ts`, `vitest.config.ts`, `tsconfig*.json`, `package.json`/`package-lock.json`, and stale `dist/` were removed. The Angular workspace's internal project name changed from `ng-app` to `gowrite` (in `angular.json`, purely cosmetic — not user-visible). The original hand-drawn `favicon.svg` (not Angular CLI's generic `favicon.ico`) was recovered from git history and wired back into `src/index.html`, so the app keeps its actual branding rather than reverting to the scaffold default.
+
+**`package.json` merged**, not replaced wholesale: kept the root's `name`/`version` (`gowrite`/`0.3.6`, more meaningful than `ng-app`/`0.0.0`), the `notices` script (`scripts/generate-third-party-notices.mjs`, framework-agnostic, needed no changes), and `test:e2e` + `@playwright/test`; took `ng-app/package.json`'s Angular dependencies and its `start`/`build`/`watch`/`test` scripts (`dev` kept as an alias for `start`, matching the old React script name so muscle memory still works). Re-added `"type": "module"` (present in the old React `package.json`, absent from `ng-app`'s) after discovering `e2e/formatting-and-export.spec.ts`'s `import.meta.url` usage needs it under plain Node/Playwright.
+
+**`playwright.config.ts`** lost its `E2E_TARGET` dual-target switch (§15) — nothing to switch between anymore — and now targets `http://localhost:4200` via `npm start` unconditionally.
+
+**`.claude/launch.json`** lost the old `gowrite-dev` (Vite, port 5173) entry; the Angular entry was renamed from `gowrite-ng-dev` to `gowrite-dev` and repointed at the repo root instead of `ng-app/`.
+
+**`.gitignore`** merged: kept the root's existing entries (Playwright artifacts, `docs/specs/`, `opencode.*`, etc.) and added the Angular-specific ones from `ng-app/.gitignore` that weren't already covered (`/out-tsc/`, `/bazel-out/`, `/.angular/cache/`, `.sass-cache/`, and a few rarely-hit ones like `testem.log`).
+
+**`THIRD-PARTY-NOTICES.md` regenerated** via `npm run notices` against the new `node_modules` (457 packages, Angular's dependency tree rather than React's).
+
+**`README.md` created** — there wasn't one before cutover (checked; genuinely didn't exist at any point in the repo's history up to this point), so this is new rather than rewritten: a short description of what GoWrite is plus dev/test/build commands for the now-single app.
+
+**Verified after the move**: `ng test` (303 tests), `npx playwright test` (27 E2E specs), and `npm run build` (output to `dist/gowrite/`) all clean from the new root layout with no path fixups needed beyond the above — Angular's `root: ""`/`sourceRoot: "src"` convention in `angular.json` is relative to the file's own location, so the directory move alone was sufficient for the build/test tooling. Confirmed in a real browser: the app loads, IndexedDB-persisted content from earlier testing is still there (same origin, same storage), and `favicon.svg` serves with a 200.
+
+**Not done, deliberately out of scope for "full cutover" as instructed**: setting up CI (open decision #6, never asked for), and no `git push` — both commits are local only on `angular-refactor`, nothing sent to `origin` (`git@github.com:james-noit/GoWrite`) without a separate explicit instruction to do so.
 
 ## Next step
 
-Every component in the original React → Angular file/concept map (§5) now has a real, tested Angular port (`ContextMenu`, §14), and the full Track B E2E suite passes against both apps unmodified (§15) — the parity gate the whole plan was building toward is green. The only phase left per the roadmap (§4) is **cutover** (the table's "Phase 8"), and it hinges on open decision #4 above, which is deliberately *not* defaulted: replace `src/` in place, or repoint the deploy target at `ng-app/`'s build output and remove `src/`/its dependencies in a separate follow-up? Both are reasonable and the plan has recommended defaults for everything else, but this one changes what ships and is worth an explicit go-ahead before touching `package.json`'s dependency list or deleting the React app's source.
+The migration is complete. What's left is entirely at the user's discretion: push `angular-refactor` and open a PR against `main` (or merge it directly), decide on open decisions #5/#6/#9 above (ODT image import, CI, full CSS parity), or simply start building new features on the Angular app.
