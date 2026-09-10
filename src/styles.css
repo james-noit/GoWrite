@@ -1,1 +1,112 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global base styles — ported from the original React app's src/index.css. This is
+ * infrastructure every component's own scoped CSS already assumes (the `var(--panel-bg, #1a1a1a)`
+ * -style fallbacks throughout ng-app's component stylesheets exist precisely because this file
+ * was empty until now): CSS custom properties, box-sizing, the html/body height chain, and base
+ * typography/background. Full per-component visual parity (~2,486 lines across the original
+ * app's stylesheets) is still out of scope (docs/angular-migration-plan.md open decision #9) —
+ * this is the shared foundation those components render on top of, not a redesign.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg-0: #f4f5f8;
+  --bg-1: #ffffff;
+  --bg-2: #ffffff;
+  --surface: rgba(255, 255, 255, 0.6);
+  --surface-strong: rgba(255, 255, 255, 0.82);
+  --surface-menu: rgba(255, 255, 255, 0.38);
+  --border: rgba(15, 18, 30, 0.08);
+  --border-strong: rgba(15, 18, 30, 0.14);
+  --text-0: #14161f;
+  --text-1: #4a4e5c;
+  --text-2: #82869a;
+  --accent: #6d5bf6;
+  --accent-2: #22c3ee;
+  --accent-contrast: #ffffff;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --shadow-color: 220 30% 20%;
+  --shadow-sm: 0 1px 2px hsl(var(--shadow-color) / 0.08);
+  --shadow-md: 0 8px 24px hsl(var(--shadow-color) / 0.12);
+  --shadow-lg: 0 16px 48px hsl(var(--shadow-color) / 0.18);
+  --blur: 18px;
+  --blur-menu: 28px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 140ms;
+  --dur-med: 240ms;
+
+  /* Not in the original index.css (each component hardcoded its own dark-mode fallback instead,
+   * e.g. context-menu.css's `var(--panel-bg, #1a1a1a)`) — defined here now so those components
+   * pick up the real theme instead of always falling back. */
+  --panel-bg: var(--bg-1);
+}
+
+[data-theme='dark'] {
+  --bg-0: #0b0d13;
+  --bg-1: #12141c;
+  --bg-2: #171a24;
+  --surface: rgba(23, 26, 36, 0.6);
+  --surface-strong: rgba(23, 26, 36, 0.85);
+  --surface-menu: rgba(23, 26, 36, 0.42);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text-0: #f1f2f6;
+  --text-1: #c2c5d3;
+  --text-2: #83879c;
+  --accent: #8b7bff;
+  --accent-2: #33d9f5;
+  --shadow-color: 230 60% 3%;
+  --shadow-sm: 0 1px 2px hsl(var(--shadow-color) / 0.4);
+  --shadow-md: 0 8px 24px hsl(var(--shadow-color) / 0.5);
+  --shadow-lg: 0 20px 60px hsl(var(--shadow-color) / 0.6);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* React's chain ended at `#root`; Angular's equivalent (`gowrite-root`, the `<gowrite-root>` host
+ * element) already gets `height: 100vh` from app.css's own `:host` rule, so only html/body need
+ * it here. */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--text-0);
+  background:
+    radial-gradient(1200px 600px at 100% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent),
+    radial-gradient(900px 500px at -10% 110%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent),
+    var(--bg-0);
+  transition: background-color var(--dur-med) var(--ease), color var(--dur-med) var(--ease);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
