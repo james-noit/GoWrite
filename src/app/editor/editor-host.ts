@@ -21,12 +21,13 @@ import { DragAndDropDirective } from './drag-and-drop.directive';
 import { EditorService } from './editor.service';
 import { ImportStatusService } from './import-status.service';
 import { LastAiEditService } from './last-ai-edit.service';
-import { Toolbar } from './toolbar';
 import { countOf } from './word-count';
 
 /**
- * Editor shell — mounts the Tiptap editor, shows a word/char count, the format Toolbar, a
- * drag-to-import drop zone, and a loading overlay while a document is loading/importing. Ported
+ * Editor shell — mounts the Tiptap editor, shows a word/char count, a drag-to-import drop zone,
+ * and a loading overlay while a document is loading/importing. The format Toolbar is a sibling in
+ * app.html, not a child here — it needs to render between the header and this component, not
+ * inside the editor card (see the `gowrite-toolbar` rule in theme.css). Ported
  * from src/components/Editor/Editor.tsx + the import wiring from src/App.tsx (export and the
  * "Import…" trigger itself now live in Header/FileMenu, Phase 6's other half — this component
  * only handles *receiving* an imported file, whether via drag-drop here or a click over in
@@ -39,7 +40,7 @@ import { countOf } from './word-count';
  */
 @Component({
   selector: 'gowrite-editor-host',
-  imports: [Toolbar, DocLoader, DragAndDropDirective, ContextMenu],
+  imports: [DocLoader, DragAndDropDirective, ContextMenu],
   templateUrl: './editor-host.html',
   styleUrl: './editor-host.css',
   encapsulation: ViewEncapsulation.None,

@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { ViewportInsetsService } from './core/viewport-insets.service';
 import { EditorHost } from './editor/editor-host';
+import { Toolbar } from './editor/toolbar';
 import { Header } from './header/header';
 import { MobileSupportButton } from './header/mobile-support-button';
 import { SettingsModal, type SettingsTab } from './settings/settings-modal';
@@ -17,7 +18,7 @@ import { SummaryModal, type SummaryRequest } from './summary/summary-modal';
  * the same for `openSummary`.
  */
 @Component({
-  imports: [EditorHost, Header, MobileSupportButton, SettingsModal, SummaryModal],
+  imports: [EditorHost, Header, MobileSupportButton, SettingsModal, SummaryModal, Toolbar],
   selector: 'gowrite-root',
   styleUrl: './app.css',
   templateUrl: './app.html',

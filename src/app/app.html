@@ -1,6 +1,10 @@
 <div class="app-shell">
   <gowrite-header (openSettings)="openSettings($event)" (openAiSettings)="openSettings('ai')" />
 
+  <!-- Its own row between the header and .app-main, not inside the editor card — see the
+  `gowrite-toolbar` rule in theme.css for why the host element itself needs sizing too. -->
+  <gowrite-toolbar />
+
   <!-- .app-main is the flex:1 wrapper (theme.css) that lets the editor card grow to fill the
   remaining viewport height below the header — the original React app had this as <main
   className="app-main" ref={containerRef}>; without it here, gowrite-editor-host just sizes to

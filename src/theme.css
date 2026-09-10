@@ -590,6 +590,18 @@
   color: var(--accent-contrast);
 }
 
+/* `gowrite-toolbar` (not `.format-bar` alone): Angular renders every component behind its own
+ * host tag, and `<gowrite-toolbar>` sits directly in `.app-shell`'s flex column now that the
+ * toolbar lives between the header and `.app-main` instead of inside the editor card — without
+ * sizing the host too, it would default to `display: inline` and not behave as a proper flex
+ * item. `flex-shrink: 0` keeps it from being squeezed when the window is short; unlike
+ * `gowrite-editor-host` it doesn't need `flex: 1`, since it should only ever take its content's
+ * height, never grow into space `.app-main` needs. */
+gowrite-toolbar {
+  display: block;
+  flex-shrink: 0;
+}
+
 /* ---------- Main / editor ---------- */
 
 .app-main {
@@ -644,14 +656,17 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent), var(--shadow-md);
 }
 
-/* Formatting bar: sits directly below the header, flush against it (no gap) */
+/* Formatting bar: its own full-width strip between the header and the main/editor section (not
+   part of the editor card) — a "glass" surface like the header, with its own bottom border/shadow
+   so it reads as a distinct section rather than blending into either neighbor. */
 
 .format-bar {
   flex-shrink: 0;
-  border-top: none;
-  border-left: none;
-  border-right: none;
-  border-radius: 0;
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   position: relative;
   z-index: 10;
 }
@@ -665,7 +680,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px;
+  padding: 8px 14px;
 }
 
 .format-bar-inline {
