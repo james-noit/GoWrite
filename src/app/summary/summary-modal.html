@@ -1,7 +1,7 @@
 @if (request(); as req) {
   <div class="summary-backdrop" (click)="close()">
     <div
-      class="summary-modal"
+      class="summary-modal glass-panel"
       cdkTrapFocus
       cdkTrapFocusAutoCapture
       (click)="$event.stopPropagation()"
@@ -9,7 +9,7 @@
       aria-modal="true"
       aria-labelledby="summary-modal-title"
     >
-      <div class="panel-header">
+      <div class="ai-panel-header">
         <h2 id="summary-modal-title">{{ t(req.titleKey) }}</h2>
         <button type="button" class="icon-btn" (click)="close()" [attr.aria-label]="t('common.close')">✕</button>
       </div>
@@ -28,13 +28,13 @@
 
       <div class="action-row">
         @if (isRunning()) {
-          <button type="button" class="btn btn--danger" (click)="stop()">{{ t('ai.stop') }}</button>
+          <button type="button" class="connect-btn connect-btn--danger" (click)="stop()">{{ t('ai.stop') }}</button>
         } @else if (text()) {
-          <button type="button" class="btn" (click)="copyText()">{{ copied() ? t('summary.copied') : t('summary.copy') }}</button>
+          <button type="button" class="connect-btn connect-btn--ghost" (click)="copyText()">{{ copied() ? t('summary.copied') : t('summary.copy') }}</button>
           <span class="download-label">{{ t('summary.downloadLabel') }}</span>
-          <button type="button" class="btn" (click)="downloadTxt()">.txt</button>
-          <button type="button" class="btn" (click)="downloadMd()">.md</button>
-          <button type="button" class="btn" (click)="downloadDocx()">.docx</button>
+          <button type="button" class="connect-btn connect-btn--ghost" (click)="downloadTxt()">.txt</button>
+          <button type="button" class="connect-btn connect-btn--ghost" (click)="downloadMd()">.md</button>
+          <button type="button" class="connect-btn connect-btn--ghost" (click)="downloadDocx()">.docx</button>
         }
       </div>
     </div>

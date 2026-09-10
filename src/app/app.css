@@ -1,10 +1,5 @@
+/* .app-shell itself is fully styled by the global src/theme.css (it sets height via 100dvh
+ * directly, not relative to this host element) — :host only needs to not default to `inline`. */
 :host {
   display: block;
-  height: 100vh;
-}
-
-.app-shell {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
 }

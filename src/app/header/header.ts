@@ -27,8 +27,7 @@ export class Header implements OnInit {
   protected readonly isEditingTitle = signal(false);
   protected readonly draftTitle = signal('');
   protected readonly showIntro = signal(false);
-  protected readonly appVersion =
-    (globalThis as { __APP_VERSION__?: string }).__APP_VERSION__ ?? '';
+  protected readonly appVersion = __APP_VERSION__;
 
   private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
 

@@ -1,7 +1,7 @@
 @if (open()) {
   <div class="settings-backdrop" (click)="close()">
     <div
-      class="settings-modal"
+      class="settings-modal glass-panel"
       cdkTrapFocus
       cdkTrapFocusAutoCapture
       (click)="$event.stopPropagation()"
@@ -9,7 +9,7 @@
       aria-modal="true"
       aria-labelledby="settings-modal-title"
     >
-      <div class="panel-header">
+      <div class="ai-panel-header">
         <h2 id="settings-modal-title">{{ i18n.t('settings.title') }}</h2>
         <button type="button" class="icon-btn" (click)="close()" [attr.aria-label]="i18n.t('common.close')">✕</button>
       </div>
@@ -40,8 +40,8 @@
 
       <div class="settings-body">
         @if (tab() === 'general') {
-          <section class="settings-section">
-            <h3>{{ i18n.t('settings.appearance') }}</h3>
+          <section class="ai-panel-section">
+            <h3 class="ai-panel-subtitle">{{ i18n.t('settings.appearance') }}</h3>
             <div class="settings-row">
               <span>{{ i18n.t('file.theme') }}</span>
               <button type="button" role="switch" [attr.aria-checked]="theme.theme() === 'dark'" (click)="theme.toggleTheme()">
@@ -60,8 +60,8 @@
             </div>
           </section>
 
-          <section class="settings-section">
-            <h3>{{ i18n.t('settings.editor') }}</h3>
+          <section class="ai-panel-section">
+            <h3 class="ai-panel-subtitle">{{ i18n.t('settings.editor') }}</h3>
             <label class="field-label" for="quick-format-delay">{{ i18n.t('settings.quickFormatDelay') }}</label>
             <input
               id="quick-format-delay"
@@ -82,7 +82,7 @@
             <button type="button" class="ai-accordion-header" (click)="toggleConfigOpen()" [attr.aria-expanded]="configOpen()">
               <span class="status-dot" [class]="'status-dot--' + ai.status()" aria-hidden="true"></span>
               <span class="ai-accordion-title">{{ i18n.t('ai.configureProvider') }}</span>
-              <span class="conn-label">{{ statusLabel() }}</span>
+              <span class="conn-label" [class]="'conn-label--' + ai.status()">{{ statusLabel() }}</span>
               <span class="chevron">{{ configOpen() ? '▾' : '▸' }}</span>
             </button>
 
@@ -168,8 +168,8 @@
             }
           </section>
 
-          <section class="settings-section">
-            <h3>{{ i18n.t('ai.tools') }}</h3>
+          <section class="ai-panel-section">
+            <h3 class="ai-panel-subtitle">{{ i18n.t('ai.tools') }}</h3>
             @if (!ai.isConnected()) {
               <p class="field-hint">{{ i18n.t('ai.toolsDisconnectedHint') }}</p>
             }
