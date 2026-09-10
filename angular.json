@@ -25,7 +25,8 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "src/theme.css"
             ],
             "define": {
               "__APP_VERSION__": "\"0.3.6\""
