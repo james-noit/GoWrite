@@ -533,6 +533,14 @@
   border-radius: 999px;
   background: var(--border-strong);
   transition: background-color var(--dur-med) var(--ease);
+  /* These are <button>s (for role="switch" semantics), so without an explicit reset the browser's
+   * default button chrome (an outset border, horizontal padding, appearance: auto) draws on top
+   * of this pill — a visible bevel/outline instead of a clean toggle track. */
+  appearance: none;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .theme-toggle-track.is-dark,

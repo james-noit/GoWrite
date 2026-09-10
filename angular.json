@@ -29,7 +29,7 @@
               "src/theme.css"
             ],
             "define": {
-              "__APP_VERSION__": "\"0.3.6\""
+              "__APP_VERSION__": "\"0.4.0\""
             }
           },
           "configurations": {

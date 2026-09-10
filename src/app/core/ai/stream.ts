@@ -57,7 +57,20 @@ async function streamOpenAICompatible(
       method: 'POST',
       headers,
       signal,
-      body: JSON.stringify({ model, stream: true, max_tokens: maxTokens, messages }),
+      body: JSON.stringify({
+        model,
+        stream: true,
+        max_tokens: maxTokens,
+        messages,
+        // Local reasoning models (Qwen3, gemma-3-thinking, etc. served through llama.cpp/Ollama/LM
+        // Studio) stream their chain-of-thought as `reasoning_content` before any real `content` —
+        // see readSse's caller below, which only reads `content`. With autocomplete's small token
+        // budgets the model burns the whole budget thinking and never emits a single content token,
+        // so the feature silently produces empty suggestions. `chat_template_kwargs.enable_thinking`
+        // is the de-facto convention (llama.cpp, vLLM) for switching a hybrid model's template to
+        // non-thinking mode; providers/templates that don't recognize it simply ignore it.
+        ...(isCustomLocal ? { chat_template_kwargs: { enable_thinking: false } } : {}),
+      }),
     });
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err;
