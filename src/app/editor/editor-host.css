@@ -1,3 +1,22 @@
+/* React's `<Editor>` component rendered `.editor-shell` as its own DOM root, so `.editor-shell`
+ * (flex: 1 in theme.css) sat directly inside `.app-main`'s flex layout with no element between
+ * them. Angular components always render behind their own host tag, so `<gowrite-editor-host>`
+ * itself sits between `.app-main` and `.editor-shell` here — without sizing this host element
+ * too, it defaults to `display: inline` (a non-flex-item, non-flex-container box) and the whole
+ * chain of `flex: 1`s below it does nothing, leaving the editor card sized to its own content
+ * instead of filling the viewport. Not in theme.css since the original never needed it.
+ */
+/* `gowrite-editor-host` (not `:host`): this component uses ViewEncapsulation.None (see the class
+ * doc comment below), under which Angular does not rewrite `:host` into anything meaningful — with
+ * no shadow root and no scoping attribute, a literal `:host` selector here matches nothing and is
+ * silently dead CSS. The element still needs to be targeted by its actual tag name instead. */
+gowrite-editor-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* Fully styled by the global src/theme.css (ported from the original App.css) by class name —
  * this file only adds the one genuine mismatch: the original's drag-over highlight targets
  * `.editor-shell.is-drag-over` because that's the element its `useDragAndDrop` ref attaches to,
