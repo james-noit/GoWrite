@@ -13,6 +13,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from 'tiptap-markdown';
 import { CodeBlockWithLanguageInput } from './code-block';
 import { FontSize } from './font-size';
+import { FootnoteExtensions } from './footnote';
 import { GhostSuggestion } from './ghost-suggestion';
 import { Image, type ImageNodeViewDeps } from './image';
 
@@ -46,5 +47,6 @@ export function buildEditorExtensions(options: { placeholder: string; imageDeps:
     Markdown.configure({ html: true, transformPastedText: false }),
     Image.configure({ deps: options.imageDeps }),
     GhostSuggestion,
+    ...FootnoteExtensions,
   ];
 }

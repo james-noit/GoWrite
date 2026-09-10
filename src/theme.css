@@ -1478,6 +1478,65 @@ gowrite-toolbar {
   color: var(--text-0);
 }
 
+/* ---------- Footnotes ---------- */
+
+/* Number comes from footnote.ts's `footnoteNumberingPlugin`, which stamps a `data-number`
+ * attribute onto both a reference and its matching item — computed from document order, so it
+ * stays correct as footnotes are added, removed or reordered without any extra wiring here. */
+.footnote-ref {
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 1px;
+  border-radius: 3px;
+}
+
+.footnote-ref::after {
+  content: attr(data-number);
+}
+
+.footnote-ref:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.editor-content .ProseMirror .footnotes {
+  margin-top: 1.5em;
+  padding-top: 0.9em;
+  border-top: 1px solid var(--border-strong);
+  font-size: 0.85rem;
+  color: var(--text-1);
+}
+
+.footnote-item {
+  display: flex;
+  gap: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+.footnote-item::before {
+  content: attr(data-number) ".";
+  flex-shrink: 0;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.footnote-item p {
+  margin: 0;
+}
+
+.footnote-item.is-flash {
+  animation: footnote-flash 0.9s var(--ease);
+}
+
+@keyframes footnote-flash {
+  0% {
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 /* ---------- Images ---------- */
 
 .gw-image {

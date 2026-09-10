@@ -142,6 +142,14 @@ export const formatGroups: ToolbarGroup[] = [
         },
       },
       {
+        icon: 'footnote',
+        titleKey: 'toolbar.footnote',
+        isDisabled: (e) => e.isActive('footnoteItem') || e.isActive('footnotes'),
+        run: (e) => {
+          e.chain().focus().insertFootnote().run();
+        },
+      },
+      {
         icon: 'image',
         titleKey: 'toolbar.image',
         run: (e) => {

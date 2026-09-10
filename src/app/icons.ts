@@ -139,6 +139,12 @@ const ICON_MARKUP = {
     <line x1="10" y1="1" x2="10" y2="4" />
     <line x1="14" y1="1" x2="14" y2="4" />
   </svg>`,
+  footnote: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <line x1="4" y1="6" x2="20" y2="6" />
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <line x1="4" y1="18" x2="12" y2="18" />
+    <path d="M16 15.5c.4-.6 1-1 1.7-1 1 0 1.8.7 1.8 1.6 0 .7-.4 1.1-1 1.6l-1.8 1.8h2.8" />
+  </svg>`,
 } as const;
 
 export type IconName = keyof typeof ICON_MARKUP;
